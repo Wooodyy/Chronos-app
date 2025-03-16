@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Определение цветовых переменных для светлой темы */
+    --background: 255 0% 90%; /* Светлый фон */
+    --foreground: 0 0% 25%; /* Тёмный текст */
+
+    --card: 255 0% 86%; /* Цвет карточек (немного темнее фона) */
+    --card-foreground: 270 30% 20%; /* Цвет текста карточек */
+
+    --popover: 270 20% 92%; /* Цвет всплывающих окон */
+    --popover-foreground: 270 30% 20%; /* Текст всплывающих окон */
+
+    --primary: 275 80% 70%; /* Основной цвет (сиреневый) */
+    --primary-foreground: 0 0% 20%; /* Чёрный текст на основном цвете */
+
+    --secondary: 275 50% 80%; /* Вторичный цвет (мягкий фиолетовый) */
+    --secondary-foreground: 275 30% 30%; /* Темнее для контраста */
+
+    --muted: 270 20% 85%; /* Приглушённый цвет фона */
+    --muted-foreground: 270 15% 40%; /* Приглушённый текст */
+
+    --accent: 255 0% 75%; /* Акцентный цвет (бледно-сиреневый) */
+    --accent-foreground: 275 80% 70%; /* Белый текст на акцентном фоне */
+
+    --destructive: 0 84.2% 60.2%; /* Красный (опасные действия) */
+    --destructive-foreground: 0 0% 98%; /* Белый текст на красном */
+
+    --success: 142 76% 36%; /* Зелёный (успешные действия) */
+    --success-foreground: 0 0% 98%; /* Белый текст на зелёном */
+
+    --warning: 38 92% 50%; /* Жёлтый (предупреждения) */
+    --warning-foreground: 0 0% 98%; /* Белый текст на жёлтом */
+
+    --border: 270 20% 75%; /* Цвет границ */
+    --input: 270 20% 75%; /* Цвет полей ввода */
+    --ring: 275 80% 35%; /* Цвет кольцевого выделения */
+
+    --radius: 0.75rem; /* Радиус скругления */
+  }
+
+  .dark {
+    /* Цветовые переменные для тёмной темы */
+    --background: 220 10% 5%; /* Глубокий тёмно-синий фон */
+    --foreground: 0 0% 90%; /* Светлый текст */
+
+    --card: 220 10% 8%; /* Цвет карточек (чуть светлее фона) */
+    --card-foreground: 0 0% 90%; /* Светлый текст карточек */
+
+    --popover: 220 10% 8%; /* Цвет всплывающих окон */
+    --popover-foreground: 0 0% 90%; /* Текст всплывающих окон */
+
+    --primary: 275 80% 60%; /* Основной цвет (тёмно-фиолетовый) */
+    --primary-foreground: 0 0% 98%; /* Белый текст на фиолетовом */
+
+    --secondary: 275 50% 40%; /* Вторичный цвет (тёмный фиолетово-серый) */
+    --secondary-foreground: 0 0% 90%; /* Светлый текст */
+
+    --muted: 220 10% 12%; /* Приглушённый фон */
+    --muted-foreground: 210 10% 55%; /* Серый текст */
+
+    --accent: 275 0% 30%; /* Глубокий фиолетовый */
+    --accent-foreground: 275 100% 70%; /* Белый текст на акцентном цвете */
+
+    --destructive: 0 62% 45%; /* Тёмно-красный (опасные действия) */
+    --destructive-foreground: 0 0% 98%; /* Белый текст */
+
+    --success: 142 70% 35%; /* Зелёный успеха */
+    --success-foreground: 0 0% 98%; /* Белый текст */
+
+    --warning: 38 92% 50%; /* Ярко-жёлтый (предупреждение) */
+    --warning-foreground: 0 0% 10%; /* Тёмный текст на жёлтом */
+
+    --border: 220 10% 15%; /* Цвет границ */
+    --input: 220 10% 15%; /* Цвет полей ввода */
+    --ring: 275 80% 60%; /* Цвет выделения */
+
+    --radius: 0.75rem; /* Радиус скругления */
+    
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: animate-in 0.3s ease-in-out;
+  }
+
+  .animate-out {
+    animation: animate-out 0.3s ease-in-out;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes animate-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-[1.02];
+  }
+
+  .glass-effect {
+    @apply bg-background/80 backdrop-blur-md border border-border/50;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /* Стили для редактора заметок */
+  .ProseMirror {
+    min-height: calc(100vh - 12rem);
+    padding: 1rem 0;
+  }
+
+  .ProseMirror:focus {
+    outline: none;
+  }
+
+  .ProseMirror > * + * {
+    margin-top: 1rem;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    color: hsl(var(--muted-foreground) / 0.5);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .ProseMirror h1 {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    font-weight: 700;
+  }
+
+  .ProseMirror h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+  }
+
+  .ProseMirror h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+  }
+
+  .ProseMirror ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+}
+
