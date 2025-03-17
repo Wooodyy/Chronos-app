@@ -2,26 +2,6 @@ import type { Entry } from "@/types/entry"
 
 export const entries: Entry[] = [
   {
-    id: "1",
-    title: "Встреча с клиентом",
-    description: "Обсудить новый проект и требования",
-    date: new Date(2025, 2, 8, 10, 0),
-    type: "task",
-    completed: false,
-    priority: "high",
-    tags: ["работа", "клиент"],
-  },
-  {
-    id: "2",
-    title: "Купить продукты",
-    description: "Молоко, хлеб, яйца, овощи",
-    date: new Date(2025, 2, 8, 18, 30),
-    type: "task",
-    completed: true,
-    priority: "medium",
-    tags: ["личное", "покупки"],
-  },
-  {
     id: "3",
     title: "День рождения мамы",
     description: "Не забыть купить подарок и позвонить",
@@ -37,26 +17,6 @@ export const entries: Entry[] = [
     date: new Date(2025, 2, 8, 15, 45),
     type: "note",
     tags: ["работа", "идеи"],
-  },
-  {
-    id: "5",
-    title: "Оплатить счета",
-    description: "Интернет, электричество, аренда",
-    date: new Date(2025, 2, 10, 12, 0),
-    type: "task",
-    completed: false,
-    priority: "high",
-    tags: ["финансы"],
-  },
-  {
-    id: "6",
-    title: "Тренировка",
-    description: "Кардио 30 минут, силовые упражнения",
-    date: new Date(2025, 2, 8, 7, 0),
-    type: "task",
-    completed: false,
-    priority: "medium",
-    tags: ["здоровье", "спорт"],
   },
   {
     id: "7",

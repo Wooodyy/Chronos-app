@@ -1,5 +1,6 @@
 import { Pool } from "pg"
 import bcrypt from "bcryptjs"
+import type { Entry } from "@/types/entry"
 
 // Создаем пул соединений с базой данных
 const pool = new Pool({
@@ -109,7 +110,7 @@ export async function registerUser(userData: {
         login: newUser.login,
         name: `${newUser.first_name} ${newUser.last_name}`.trim(),
         firstName: newUser.first_name,
-        lastName: newUser.lastName,
+        lastName: newUser.last_name,
         email: newUser.email,
         role: newUser.role,
         avatar: null,
@@ -225,6 +226,176 @@ export async function updateUserAvatar(userId: number, avatarBuffer: Buffer): Pr
     return result.rowCount === 1
   } catch (error) {
     console.error("Ошибка при обновлении аватара:", error)
+    return false
+  }
+}
+
+// Функция для создания новой задачи
+export async function createTask(taskData: {
+  login: string
+  title: string
+  description?: string
+  date: Date
+  priority?: string
+  tags?: string[]
+}): Promise<{ success: boolean; task?: Entry; message?: string }> {
+  try {
+    const { login, title, description, date, priority, tags } = taskData
+
+    // Проверяем, существует ли пользователь с таким логином
+    const userCheck = await pool.query("SELECT id FROM users WHERE login = $1", [login])
+    if (userCheck.rows.length === 0) {
+      return { success: false, message: "Пользователь не найден" }
+    }
+
+    // Вставляем новую задачу
+    const result = await pool.query(
+      `INSERT INTO tasks 
+      (login, title, description, date, priority, tags) 
+      VALUES ($1, $2, $3, $4, $5, $6) 
+      RETURNING id, login, title, description, date, completed, priority, tags, created_at`,
+      [login, title, description || "", date, priority || "medium", tags || []],
+    )
+
+    if (result.rows.length === 0) {
+      return { success: false, message: "Ошибка при создании задачи" }
+    }
+
+    const task = result.rows[0]
+
+    // Преобразуем данные в формат Entry
+    const newTask: Entry = {
+      id: task.id.toString(),
+      title: task.title,
+      description: task.description,
+      date: new Date(task.date),
+      type: "task",
+      completed: task.completed,
+      priority: task.priority,
+      tags: task.tags,
+    }
+
+    return { success: true, task: newTask }
+  } catch (error) {
+    console.error("Ошибка создания задачи:", error)
+    return { success: false, message: "Ошибка при создании задачи" }
+  }
+}
+
+// Функция для получения всех задач пользователя
+export async function getUserTasks(login: string): Promise<Entry[]> {
+  try {
+    const result = await pool.query(
+      `SELECT id, login, title, description, date, completed, priority, tags
+       FROM tasks 
+       WHERE login = $1 
+       ORDER BY date DESC`,
+      [login],
+    )
+
+    // Преобразуем данные в формат Entry
+    return result.rows.map((task) => ({
+      id: task.id.toString(),
+      title: task.title,
+      description: task.description,
+      date: new Date(task.date),
+      type: "task",
+      completed: task.completed,
+      priority: task.priority,
+      tags: task.tags,
+    }))
+  } catch (error) {
+    console.error("Ошибка получения задач:", error)
+    return []
+  }
+}
+
+// Функция для получения задачи по ID
+export async function getTaskById(id: string): Promise<Entry | null> {
+  try {
+    const result = await pool.query(
+      `SELECT id, login, title, description, date, completed, priority, tags
+       FROM tasks 
+       WHERE id = $1`,
+      [id],
+    )
+
+    if (result.rows.length === 0) {
+      return null
+    }
+
+    const task = result.rows[0]
+
+    // Преобразуем данные в формат Entry
+    return {
+      id: task.id.toString(),
+      title: task.title,
+      description: task.description,
+      date: new Date(task.date),
+      type: "task",
+      completed: task.completed,
+      priority: task.priority,
+      tags: task.tags,
+    }
+  } catch (error) {
+    console.error("Ошибка получения задачи по ID:", error)
+    return null
+  }
+}
+
+// Функция для удаления задачи
+export async function deleteTask(id: string): Promise<boolean> {
+  try {
+    const result = await pool.query("DELETE FROM tasks WHERE id = $1 RETURNING id", [id])
+
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка удаления задачи:", error)
+    return false
+  }
+}
+
+// Функция для обновления статуса выполнения задачи
+export async function updateTaskCompletion(id: string, completed: boolean): Promise<boolean> {
+  try {
+    const result = await pool.query("UPDATE tasks SET completed = $1 WHERE id = $2 RETURNING id", [completed, id])
+
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка обновления статуса задачи:", error)
+    return false
+  }
+}
+
+// Функция для обновления задачи
+export async function updateTask(
+  id: string,
+  taskData: {
+    title?: string
+    description?: string
+    date?: Date
+    priority?: string
+    tags?: string[]
+  },
+): Promise<boolean> {
+  try {
+    const { title, description, date, priority, tags } = taskData
+
+    const result = await pool.query(
+      `UPDATE tasks 
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           date = COALESCE($3, date),
+           priority = COALESCE($4, priority),
+           tags = COALESCE($5, tags)
+       WHERE id = $6
+       RETURNING id`,
+      [title, description, date, priority, tags, id],
+    )
+
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка обновления задачи:", error)
     return false
   }
 }

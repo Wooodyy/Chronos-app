@@ -1,26 +1,51 @@
 "use client"
 
-import { useState } from "react"
-import { CheckSquare, Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { CheckSquare, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EntriesList } from "@/components/features/entries/entries-list"
 import { SearchButton } from "@/components/shared/search-button"
-import { entries } from "@/data/entries"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import type { Entry } from "@/types/entry"
 
 export default function TasksPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
+  const [tasks, setTasks] = useState<Entry[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Фильтруем только задачи
-  const tasks = entries
-    .filter((entry) => entry.type === "task")
-    .filter(
-      (entry) =>
-        searchQuery === "" ||
-        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+  // Загружаем задачи пользователя из базы данных
+  useEffect(() => {
+    const fetchUserTasks = async () => {
+      if (!user?.login) return
+
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/tasks/user/${user.login}`)
+        const data = await response.json()
+
+        if (data.success && data.tasks) {
+          setTasks(data.tasks)
+        }
+      } catch (error) {
+        console.error("Error fetching user tasks:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUserTasks()
+  }, [user])
+
+  // Фильтруем задачи по поисковому запросу
+  const filteredTasks = tasks.filter(
+    (task) =>
+      searchQuery === "" ||
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   return (
     <div className="flex flex-col min-h-full">
@@ -47,7 +72,13 @@ export default function TasksPage() {
           </div>
         </div>
 
-        <EntriesList entries={tasks} showDate={true} />
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <EntriesList entries={filteredTasks} showDate={true} />
+        )}
       </div>
 
       {/* Mobile padding for bottom navigation */}

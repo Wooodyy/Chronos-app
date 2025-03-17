@@ -5,17 +5,20 @@ import { CalendarView } from "@/components/features/calendar/calendar-view"
 import { EntriesList } from "@/components/features/entries/entries-list"
 import { AddEntryButton } from "@/components/features/entries/add-entry-button"
 import { SearchButton } from "@/components/shared/search-button"
-import { entries } from "@/data/entries"
+import { entries as staticEntries } from "@/data/entries"
 import { isSameDay } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ListCollapse, ListTodo, Bell, BookMarked } from "lucide-react"
+import { ListCollapse, ListTodo, Bell, BookMarked, Loader2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import type { Entry } from "@/types/entry"
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [searchQuery, setSearchQuery] = useState("")
   const [isCompact, setIsCompact] = useState(false)
+  const [dbTasks, setDbTasks] = useState<Entry[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -28,7 +31,37 @@ export default function DashboardPage() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  const dayEntries = entries
+  // Загружаем задачи пользователя из базы данных
+  useEffect(() => {
+    const fetchUserTasks = async () => {
+      if (!user?.login) return
+
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/tasks/user/${user.login}`)
+        const data = await response.json()
+
+        if (data.success && data.tasks) {
+          setDbTasks(data.tasks)
+        }
+      } catch (error) {
+        console.error("Error fetching user tasks:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUserTasks()
+  }, [user])
+
+  // Получаем напоминания и заметки из статических данных
+  const staticRemindersAndNotes = staticEntries.filter((entry) => entry.type === "reminder" || entry.type === "note")
+
+  // Объединяем все записи
+  const allEntries = [...staticRemindersAndNotes, ...dbTasks]
+
+  // Фильтруем записи по выбранной дате и поисковому запросу
+  const dayEntries = allEntries
     .filter((entry) => isSameDay(entry.date, selectedDate))
     .filter(
       (entry) =>
@@ -59,57 +92,63 @@ export default function DashboardPage() {
 
         <Card className="overflow-hidden border-none shadow-md">
           <CardContent className="p-0">
-            <CalendarView selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+            <CalendarView selectedDate={selectedDate} onDateSelect={setSelectedDate} dbTasks={dbTasks} />
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full max-w-lg mx-auto flex flex-wrap gap-2 mb-6">
-            <TabsTrigger value="all" className="flex-auto min-w-fit">
-              <span className="flex items-center gap-2">
-                <ListCollapse className="h-4 w-4" />
-                {!isCompact && <span>Все</span>}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex-auto min-w-fit">
-              <span className="flex items-center gap-2">
-                <ListTodo className="h-4 w-4" />
-                {!isCompact && <span>Задачи</span>}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="reminders" className="flex-auto min-w-fit">
-              <span className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                {!isCompact && <span>Напоминания</span>}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="flex-auto min-w-fit">
-              <span className="flex items-center gap-2">
-                <BookMarked className="h-4 w-4" />
-                {!isCompact && <span>Заметки</span>}
-              </span>
-            </TabsTrigger>
-          </TabsList>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="w-full max-w-lg mx-auto flex flex-wrap gap-2 mb-6">
+              <TabsTrigger value="all" className="flex-auto min-w-fit">
+                <span className="flex items-center gap-2">
+                  <ListCollapse className="h-4 w-4" />
+                  {!isCompact && <span>Все</span>}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex-auto min-w-fit">
+                <span className="flex items-center gap-2">
+                  <ListTodo className="h-4 w-4" />
+                  {!isCompact && <span>Задачи</span>}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="reminders" className="flex-auto min-w-fit">
+                <span className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  {!isCompact && <span>Напоминания</span>}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="flex-auto min-w-fit">
+                <span className="flex items-center gap-2">
+                  <BookMarked className="h-4 w-4" />
+                  {!isCompact && <span>Заметки</span>}
+                </span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="all" className="mt-0">
-            <EntriesList
-              entries={dayEntries}
-              title={`Записи на ${selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}`}
-            />
-          </TabsContent>
+            <TabsContent value="all" className="mt-0">
+              <EntriesList
+                entries={dayEntries}
+                title={`Записи на ${selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}`}
+              />
+            </TabsContent>
 
-          <TabsContent value="tasks" className="mt-0">
-            <EntriesList entries={tasks} title="Задачи" />
-          </TabsContent>
+            <TabsContent value="tasks" className="mt-0">
+              <EntriesList entries={tasks} title="Задачи" />
+            </TabsContent>
 
-          <TabsContent value="reminders" className="mt-0">
-            <EntriesList entries={reminders} title="Напоминания" />
-          </TabsContent>
+            <TabsContent value="reminders" className="mt-0">
+              <EntriesList entries={reminders} title="Напоминания" />
+            </TabsContent>
 
-          <TabsContent value="notes" className="mt-0">
-            <EntriesList entries={notes} title="Заметки" />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="notes" className="mt-0">
+              <EntriesList entries={notes} title="Заметки" />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
 
       <div className="h-20 md:hidden" />

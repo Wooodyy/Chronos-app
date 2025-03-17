@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, ListTodo } from "lucide-react"
+import { ArrowLeft, ListTodo, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,60 +13,139 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { entries } from "@/data/entries"
 import { format } from "date-fns"
+import type { Entry, PriorityLevel } from "@/types/entry"
 
 export default function EditTaskPage() {
   const router = useRouter()
   const params = useParams()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [priority, setPriority] = useState("medium")
+  const [priority, setPriority] = useState<PriorityLevel>("medium")
   const [date, setDate] = useState("")
   const [time, setTime] = useState("")
   const [tags, setTags] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [entry, setEntry] = useState<Entry | null>(null)
 
   useEffect(() => {
-    // Находим задачу по ID
-    const task = entries.find((entry) => entry.id === params.id && entry.type === "task")
+    const fetchEntry = async () => {
+      setIsLoading(true)
 
-    if (task) {
-      setTitle(task.title)
-      setDescription(task.description)
-      setPriority(task.priority || "medium")
+      // Ищем задачу только в базе данных
+      try {
+        const response = await fetch(`/api/tasks/${params.id}`)
+        const data = await response.json()
 
-      // Форматируем дату и время
-      const taskDate = new Date(task.date)
-      setDate(format(taskDate, "yyyy-MM-dd"))
-      setTime(format(taskDate, "HH:mm"))
+        if (data.success && data.task) {
+          const task = data.task
+          setEntry(task)
+          setTitle(task.title)
+          setDescription(task.description)
 
-      // Объединяем теги в строку
-      setTags(task.tags?.join(", ") || "")
-    } else {
-      // Если задача не найдена, перенаправляем на дашборд
-      router.push("/dashboard")
+          // Проверяем, что приоритет является допустимым значением
+          const taskPriority = task.priority || "medium"
+          if (taskPriority === "low" || taskPriority === "medium" || taskPriority === "high") {
+            setPriority(taskPriority as PriorityLevel)
+          } else {
+            setPriority("medium")
+          }
+
+          // Форматируем дату и время
+          const taskDate = new Date(task.date)
+          setDate(format(taskDate, "yyyy-MM-dd"))
+          setTime(format(taskDate, "HH:mm"))
+
+          // Объединяем теги в строку
+          setTags(task.tags?.join(", ") || "")
+        } else {
+          // Если не нашли, перенаправляем на дашборд
+          router.push("/dashboard")
+        }
+      } catch (error) {
+        console.error("Error fetching task:", error)
+        setError("Ошибка при загрузке задачи")
+        router.push("/dashboard")
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    setIsLoading(false)
+    fetchEntry()
   }, [params.id, router])
+
+  // Функция для безопасного обновления приоритета
+  const handlePriorityChange = (value: string) => {
+    // Проверяем, что значение является допустимым PriorityLevel
+    if (value === "low" || value === "medium" || value === "high") {
+      setPriority(value as PriorityLevel)
+    } else {
+      console.warn(`Недопустимое значение приоритета: ${value}`)
+      setPriority("medium") // Устанавливаем значение по умолчанию
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
+    setError(null)
 
-    // Имитация сохранения
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      // Формируем дату и время
+      const taskDate = new Date(`${date}T${time}:00`)
 
-    // В реальном приложении здесь был бы API-запрос на обновление
-    console.log({ id: params.id, title, description, priority, date, time, tags })
+      // Преобразуем теги из строки в массив
+      const tagArray = tags
+        ? tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag.length > 0)
+        : []
 
-    router.push("/dashboard")
+      // Если это задача из базы данных
+      if (entry && !entries.find((e) => e.id === entry.id)) {
+        // Отправляем данные на сервер
+        const response = await fetch(`/api/tasks/${params.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            date: taskDate.toISOString(),
+            priority,
+            tags: tagArray,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!data.success) {
+          setError(data.message || "Не удалось обновить задачу")
+          setIsSaving(false)
+          return
+        }
+      } else {
+        // Для статических записей просто имитируем сохранение
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        console.log({ id: params.id, title, description, priority, date, time, tags: tagArray })
+      }
+
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Error updating task:", error)
+      setError("Произошла ошибка при обновлении задачи")
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-full items-center justify-center">
-        <p>Загрузка...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Загрузка...</p>
       </div>
     )
   }
@@ -88,6 +167,10 @@ export default function EditTaskPage() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Редактирование задачи</h1>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 rounded-md">{error}</div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <Card className="border-none shadow-md overflow-hidden">
@@ -118,7 +201,7 @@ export default function EditTaskPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="priority">Приоритет</Label>
-                <Select value={priority} onValueChange={setPriority}>
+                <Select value={priority} onValueChange={handlePriorityChange}>
                   <SelectTrigger id="priority">
                     <SelectValue placeholder="Выберите приоритет" />
                   </SelectTrigger>

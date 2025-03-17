@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 interface ImageCropperProps {
   image: string
@@ -20,6 +21,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const isMobile = useMediaQuery("(max-width: 640px)")
 
   const onCropChange = (crop: Point) => {
     setCrop(crop)
@@ -86,10 +88,12 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
     }
   }
 
+
+
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6">
+        <DialogHeader className="mb-2">
           <DialogTitle>Обрезать изображение</DialogTitle>
         </DialogHeader>
 
@@ -103,22 +107,35 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
             onCropChange={onCropChange}
             onCropComplete={onCropCompleteHandler}
             onZoomChange={onZoomChange}
+            
           />
         </div>
 
-        <div className="space-y-4 px-1">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="zoom">Масштаб</Label>
-              <span className="text-sm text-muted-foreground">{zoom.toFixed(1)}x</span>
+        <div className="space-y-3 px-1 mt-2">
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="zoom" className="text-sm">
+                Масштаб
+              </Label>
+              <span className="text-xs text-muted-foreground">{zoom.toFixed(1)}x</span>
             </div>
-            <Slider id="zoom" min={1} max={3} step={0.1} value={[zoom]} onValueChange={(value) => setZoom(value[0])} />
+            <Slider
+              id="zoom"
+              min={1}
+              max={3}
+              step={0.1}
+              value={[zoom]}
+              onValueChange={(value) => setZoom(value[0])}
+              className="mt-1"
+            />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="rotation">Поворот</Label>
-              <span className="text-sm text-muted-foreground">{rotation}°</span>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="rotation" className="text-sm">
+                Поворот
+              </Label>
+              <span className="text-xs text-muted-foreground">{rotation}°</span>
             </div>
             <Slider
               id="rotation"
@@ -127,15 +144,18 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
               step={1}
               value={[rotation]}
               onValueChange={(value) => setRotation(value[0])}
+              className="mt-1"
             />
           </div>
         </div>
 
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={onCancel}>
+        <DialogFooter className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
             Отмена
           </Button>
-          <Button onClick={handleSave}>Сохранить</Button>
+          <Button onClick={handleSave} className="w-full sm:w-auto">
+            Сохранить
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -3,13 +3,13 @@
 import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
-import { ArrowLeft, Calendar, Clock, CheckCircle2, Circle, Edit, Trash2 } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, CheckCircle2, Circle, Edit, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { entries } from "@/data/entries"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,13 +20,61 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import type { Entry } from "@/types/entry"
 
 export default function EntryPage() {
   const router = useRouter()
   const params = useParams()
-  const entry = entries.find((e) => e.id === params.id)
+  const [entry, setEntry] = useState<Entry | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(entry?.completed || false)
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchEntry = async () => {
+      setIsLoading(true)
+
+      // Сначала ищем в статическом массиве напоминания и заметки
+      const staticEntry = entries.find((e) => e.id === params.id && (e.type === "reminder" || e.type === "note"))
+
+      if (staticEntry) {
+        setEntry(staticEntry)
+        setIsCompleted(staticEntry.completed || false)
+        setIsLoading(false)
+        return
+      }
+
+      // Если не нашли в статическом массиве, ищем задачу в базе данных
+      try {
+        const response = await fetch(`/api/tasks/${params.id}`)
+        const data = await response.json()
+
+        if (data.success && data.task) {
+          setEntry(data.task)
+          setIsCompleted(data.task.completed || false)
+        } else {
+          // Если не нашли нигде, перенаправляем на дашборд
+          router.push("/dashboard")
+        }
+      } catch (error) {
+        console.error("Error fetching entry:", error)
+        router.push("/dashboard")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEntry()
+  }, [params.id, router])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground">Загрузка...</p>
+      </div>
+    )
+  }
 
   if (!entry) {
     return (
@@ -65,15 +113,53 @@ export default function EntryPage() {
 
   const Icon = typeIcons[entry.type]
 
-  const handleDelete = () => {
-    // В реальном приложении здесь был бы API-запрос на удаление
-    console.log("Deleting entry:", entry.id)
-    router.push("/dashboard")
+  const handleDelete = async () => {
+    // Если это задача из базы данных
+    if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
+      try {
+        const response = await fetch(`/api/tasks/${entry.id}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          router.push("/dashboard")
+        } else {
+          console.error("Failed to delete task")
+        }
+      } catch (error) {
+        console.error("Error deleting task:", error)
+      }
+    } else {
+      // Для статических записей просто перенаправляем
+      console.log("Deleting entry:", entry.id)
+      router.push("/dashboard")
+    }
   }
 
-  const toggleComplete = () => {
-    // В реальном приложении здесь был бы API-запрос на обновление
-    setIsCompleted(!isCompleted)
+  const toggleComplete = async () => {
+    // Если это задача из базы данных
+    if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
+      try {
+        const response = await fetch(`/api/tasks/${entry.id}/complete`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ completed: !isCompleted }),
+        })
+
+        if (response.ok) {
+          setIsCompleted(!isCompleted)
+        } else {
+          console.error("Failed to update task completion status")
+        }
+      } catch (error) {
+        console.error("Error updating task:", error)
+      }
+    } else {
+      // Для статических записей просто меняем состояние
+      setIsCompleted(!isCompleted)
+    }
   }
 
   const handleEdit = () => {

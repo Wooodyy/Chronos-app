@@ -18,7 +18,7 @@ import {
   isToday,
 } from "date-fns"
 import { CalendarIcon } from "lucide-react"
-import { entries } from "@/data/entries"
+import { entries as staticEntries } from "@/data/entries"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -27,9 +27,10 @@ import type { Entry } from "@/types/entry"
 interface CalendarViewProps {
   onDateSelect: (date: Date) => void
   selectedDate: Date
+  dbTasks: Entry[]
 }
 
-export function CalendarView({ onDateSelect, selectedDate }: CalendarViewProps) {
+export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = React.useState(selectedDate)
   const [view, setView] = React.useState<"week" | "month">("week")
   const [direction, setDirection] = React.useState(0)
@@ -116,7 +117,14 @@ export function CalendarView({ onDateSelect, selectedDate }: CalendarViewProps) 
   }
 
   const getEventsForDay = (date: Date) => {
-    return entries.filter((entry) => isSameDay(entry.date, date))
+    // Получаем напоминания и заметки из статического файла
+    const staticEvents = staticEntries.filter((entry) => isSameDay(entry.date, date))
+
+    // Получаем задачи из базы данных
+    const dbEvents = dbTasks.filter((entry) => isSameDay(entry.date, date))
+
+    // Объединяем события
+    return [...staticEvents, ...dbEvents]
   }
 
   // Функция для получения уникальных типов событий для дня (максимум 3 типа)
@@ -413,7 +421,7 @@ export function CalendarView({ onDateSelect, selectedDate }: CalendarViewProps) 
         )}
       </>
     )
-  }, [view, days, currentDate, selectedDate])
+  }, [view, days, currentDate, selectedDate, dbTasks])
 
   return (
     <div className="w-full overflow-hidden rounded-xl bg-card shadow-inner" ref={calendarRef} onWheel={handleWheel}>
@@ -463,7 +471,7 @@ export function CalendarView({ onDateSelect, selectedDate }: CalendarViewProps) 
                   "h-9 px-3 rounded-none border-r border-border/30 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground",
                 )}
               >
-                <p className={cn("hover:text-primary ")} >Сегодня</p>
+                <p className={cn("hover:text-primary ")}>Сегодня</p>
               </Button>
               <Button
                 variant="ghost"
@@ -473,7 +481,7 @@ export function CalendarView({ onDateSelect, selectedDate }: CalendarViewProps) 
                   "h-9 px-3 rounded-none border-r border-border/30 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground",
                 )}
               >
-                <p className={cn("hover:text-primary ", view === "week" && "text-primary",)} >Неделя</p>
+                <p className={cn("hover:text-primary ", view === "week" && "text-primary")}>Неделя</p>
               </Button>
               <Button
                 variant="ghost"
@@ -483,7 +491,7 @@ export function CalendarView({ onDateSelect, selectedDate }: CalendarViewProps) 
                   "h-9 px-3 rounded-none border-r border-border/30 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground",
                 )}
               >
-                <p className={cn("hover:text-primary ", view === "month" && "text-primary",)} >Месяц</p>
+                <p className={cn("hover:text-primary ", view === "month" && "text-primary")}>Месяц</p>
               </Button>
             </div>
           </div>

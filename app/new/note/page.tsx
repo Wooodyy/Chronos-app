@@ -35,7 +35,7 @@ export default function NewNotePage() {
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-8 max-w-full mx-auto w-full">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-full h-10 w-10">
             <ArrowLeft className="h-5 w-5" />

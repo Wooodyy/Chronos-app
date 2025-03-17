@@ -11,25 +11,84 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/contexts/auth-context"
+import type { PriorityLevel } from "@/types/entry"
 
 export default function NewTaskPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [priority, setPriority] = useState("medium")
+  const [priority, setPriority] = useState<PriorityLevel>("medium")
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [time, setTime] = useState("12:00")
+  const [tags, setTags] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
+    setError(null)
 
-    // Имитация сохранения
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (!user) {
+      setError("Вы должны быть авторизованы для создания задачи")
+      setIsSaving(false)
+      return
+    }
 
-    // В реальном приложении здесь был бы API-запрос
-    console.log({ title, description, priority })
+    try {
+      // Формируем дату и время
+      const taskDate = new Date(`${date}T${time}:00`)
 
-    router.push("/dashboard")
+      // Преобразуем теги из строки в массив
+      const tagArray = tags
+        ? tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag.length > 0)
+        : []
+
+      // Отправляем данные на сервер
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          login: user.login,
+          title,
+          description,
+          date: taskDate.toISOString(),
+          priority,
+          tags: tagArray,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        router.push("/dashboard")
+      } else {
+        setError(data.message || "Не удалось создать задачу")
+      }
+    } catch (error) {
+      console.error("Error creating task:", error)
+      setError("Произошла ошибка при создании задачи")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Функция для безопасного обновления приоритета
+  const handlePriorityChange = (value: string) => {
+    // Проверяем, что значение является допустимым PriorityLevel
+    if (value === "low" || value === "medium" || value === "high") {
+      setPriority(value as PriorityLevel)
+    } else {
+      console.warn(`Недопустимое значение приоритета: ${value}`)
+      setPriority("medium") // Устанавливаем значение по умолчанию
+    }
   }
 
   return (
@@ -37,7 +96,7 @@ export default function NewTaskPage() {
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-8 max-w-full mx-auto w-full">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-full h-10 w-10">
             <ArrowLeft className="h-5 w-5" />
@@ -49,6 +108,10 @@ export default function NewTaskPage() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Новая задача</h1>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 rounded-md">{error}</div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <Card className="border-none shadow-md overflow-hidden">
@@ -79,7 +142,7 @@ export default function NewTaskPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="priority">Приоритет</Label>
-                <Select value={priority} onValueChange={setPriority}>
+                <Select value={priority} onValueChange={handlePriorityChange}>
                   <SelectTrigger id="priority">
                     <SelectValue placeholder="Выберите приоритет" />
                   </SelectTrigger>
@@ -92,16 +155,21 @@ export default function NewTaskPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date">Дата и время</Label>
+                <Label htmlFor="date">Дедлайн</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input id="date" type="date" defaultValue={new Date().toISOString().split("T")[0]} />
-                  <Input id="time" type="time" defaultValue="12:00" />
+                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="tags">Теги (через запятую)</Label>
-                <Input id="tags" placeholder="работа, срочно, проект" />
+                <Input
+                  id="tags"
+                  placeholder="работа, срочно, проект"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                />
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">

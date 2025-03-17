@@ -11,7 +11,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const user = await getUserById(userId)
-    //console.log("API: User data retrieved:", user) // Добавим для отладки
 
     if (!user) {
       return NextResponse.json({ success: false, message: "Пользователь не найден" }, { status: 404 })
