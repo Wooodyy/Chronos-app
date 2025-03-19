@@ -71,6 +71,13 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
     // Рисуем только обрезанную часть
     ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size)
 
+    // Создаем круглую маску
+    ctx.globalCompositeOperation = "destination-in"
+    ctx.beginPath()
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+    ctx.closePath()
+    ctx.fill()
+
     ctx.restore()
 
     // Преобразуем canvas в base64
@@ -87,8 +94,6 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
       }
     }
   }
-
-
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
@@ -107,7 +112,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
             onCropChange={onCropChange}
             onCropComplete={onCropCompleteHandler}
             onZoomChange={onZoomChange}
-            
+            cropShape="round"
           />
         </div>
 

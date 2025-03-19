@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 
 export interface User {
@@ -36,13 +36,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const isUpdatingRef = useRef(false)
 
-  // Функция для обновления данных пользователя
-  const updateUserData = async () => {
-    if (!user?.id) return
+  // Функция для обновления данных пользователя из API
+  const updateUserData = useCallback(async () => {
+    if (!user?.id || isUpdatingRef.current) return
 
     try {
-      const response = await fetch(`/api/users/${user.id}`)
+      isUpdatingRef.current = true
+      // Добавляем параметр для предотвращения кэширования
+      const timestamp = new Date().getTime()
+      const response = await fetch(`/api/users/${user.id}?t=${timestamp}`)
       const data = await response.json()
 
       if (data.success && data.user) {
@@ -54,12 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setUser(updatedUser)
         localStorage.setItem("chronos_user", JSON.stringify(updatedUser))
-        console.log("User data updated:", updatedUser) // Добавим для отладки
       }
     } catch (error) {
       console.error("Error updating user data:", error)
+    } finally {
+      isUpdatingRef.current = false
     }
-  }
+  }, [user])
 
   useEffect(() => {
     // Проверяем, есть ли сохраненный пользователь в localStorage
@@ -69,28 +74,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser)
 
-          // Проверяем актуальность данных пользователя из API
-          if (parsedUser.id) {
+          // Временно устанавливаем пользователя из localStorage
+          setUser(parsedUser)
+
+          // Сразу запрашиваем актуальные данные из API
+          if (parsedUser.id && !isUpdatingRef.current) {
             try {
-              const response = await fetch(`/api/users/${parsedUser.id}`)
+              isUpdatingRef.current = true
+              // Добавляем параметр для предотвращения кэширования
+              const timestamp = new Date().getTime()
+              const response = await fetch(`/api/users/${parsedUser.id}?t=${timestamp}`)
               const data = await response.json()
 
               if (data.success && data.user) {
-                setUser(data.user)
+                const freshUser = {
+                  ...parsedUser,
+                  ...data.user,
+                  name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim(),
+                }
+                setUser(freshUser)
+                localStorage.setItem("chronos_user", JSON.stringify(freshUser))
               } else {
                 // Если пользователь не найден в базе, очищаем localStorage
                 localStorage.removeItem("chronos_user")
+                setUser(null)
               }
             } catch (error) {
               console.error("Error fetching user data:", error)
-              // Если API недоступно, используем данные из localStorage
-              setUser(parsedUser)
+              // Оставляем данные из localStorage, если API недоступно
+            } finally {
+              isUpdatingRef.current = false
             }
           }
         }
       } catch (error) {
         console.error("Error loading user from localStorage:", error)
         localStorage.removeItem("chronos_user")
+        setUser(null)
       } finally {
         setIsLoading(false)
       }

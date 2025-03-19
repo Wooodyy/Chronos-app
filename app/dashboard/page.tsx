@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { CalendarView } from "@/components/features/calendar/calendar-view"
 import { EntriesList } from "@/components/features/entries/entries-list"
 import { AddEntryButton } from "@/components/features/entries/add-entry-button"
@@ -19,7 +19,20 @@ export default function DashboardPage() {
   const [isCompact, setIsCompact] = useState(false)
   const [dbTasks, setDbTasks] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { user } = useAuth()
+  const { user, updateUserData } = useAuth()
+  const dataLoadedRef = useRef(false)
+
+  // Обновляем данные пользователя при загрузке страницы
+  useEffect(() => {
+    const initPage = async () => {
+      if (!dataLoadedRef.current && user?.id) {
+        dataLoadedRef.current = true
+        await updateUserData()
+      }
+    }
+
+    initPage()
+  }, [updateUserData, user?.id])
 
   useEffect(() => {
     const handleResize = () => {
@@ -38,7 +51,9 @@ export default function DashboardPage() {
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/tasks/user/${user.login}`)
+        // Добавляем случайный параметр для предотвращения кэширования
+        const timestamp = new Date().getTime()
+        const response = await fetch(`/api/tasks/user/${user.login}?t=${timestamp}`)
         const data = await response.json()
 
         if (data.success && data.tasks) {
@@ -51,7 +66,9 @@ export default function DashboardPage() {
       }
     }
 
-    fetchUserTasks()
+    if (user) {
+      fetchUserTasks()
+    }
   }, [user])
 
   // Получаем напоминания и заметки из статических данных

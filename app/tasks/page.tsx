@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { CheckSquare, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EntriesList } from "@/components/features/entries/entries-list"
@@ -11,10 +11,23 @@ import type { Entry } from "@/types/entry"
 
 export default function TasksPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, updateUserData } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [tasks, setTasks] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const dataLoadedRef = useRef(false)
+
+  // Обновляем данные пользователя при загрузке страницы
+  useEffect(() => {
+    const initPage = async () => {
+      if (!dataLoadedRef.current && user?.id) {
+        dataLoadedRef.current = true
+        await updateUserData()
+      }
+    }
+
+    initPage()
+  }, [updateUserData, user?.id])
 
   // Загружаем задачи пользователя из базы данных
   useEffect(() => {
@@ -23,7 +36,9 @@ export default function TasksPage() {
 
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/tasks/user/${user.login}`)
+        // Добавляем случайный параметр для предотвращения кэширования
+        const timestamp = new Date().getTime()
+        const response = await fetch(`/api/tasks/user/${user.login}?t=${timestamp}`)
         const data = await response.json()
 
         if (data.success && data.tasks) {
@@ -36,7 +51,9 @@ export default function TasksPage() {
       }
     }
 
-    fetchUserTasks()
+    if (user) {
+      fetchUserTasks()
+    }
   }, [user])
 
   // Фильтруем задачи по поисковому запросу
