@@ -16,6 +16,7 @@ import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
 import { format } from "date-fns"
 import { ImageCropper } from "@/components/features/profile/image-cropper"
+import { useNotification } from "@/components/ui/notification"
 
 export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
@@ -23,8 +24,8 @@ export default function ProfilePage() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const { user, logout, updateUserData } = useAuth()
-  const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { showNotification } = useNotification()
 
   // Состояние для формы
   const [firstName, setFirstName] = useState("")
@@ -54,7 +55,6 @@ export default function ProfilePage() {
     if (!user) return
 
     setIsSaving(true)
-    setStatusMessage(null)
 
     try {
       const response = await fetch(`/api/users/${user.id}`, {
@@ -72,32 +72,21 @@ export default function ProfilePage() {
       const data = await response.json()
 
       if (data.success) {
-        setStatusMessage({
-          text: "Профиль успешно обновлен",
-          type: "success",
-        })
+        // Показываем уведомление
+        showNotification("Данные профиля успешно обновлены", "success")
 
         // Обновляем данные пользователя
         await updateUserData()
       } else {
-        setStatusMessage({
-          text: data.message || "Не удалось обновить профиль",
-          type: "error",
-        })
+        // Показываем уведомление об ошибке
+        showNotification(data.message || "Не удалось обновить профиль", "error")
       }
     } catch (error) {
       console.error("Error updating profile:", error)
-      setStatusMessage({
-        text: "Произошла ошибка при обновлении профиля",
-        type: "error",
-      })
+      // Показываем уведомление об ошибке
+      showNotification("Произошла ошибка при обновлении профиля", "error")
     } finally {
       setIsSaving(false)
-
-      // Скрываем сообщение через 3 секунды
-      setTimeout(() => {
-        setStatusMessage(null)
-      }, 3000)
     }
   }
 
@@ -114,19 +103,13 @@ export default function ProfilePage() {
 
     // Проверка типа файла
     if (!file.type.startsWith("image/")) {
-      setStatusMessage({
-        text: "Пожалуйста, выберите изображение",
-        type: "error",
-      })
+      showNotification("Пожалуйста, выберите изображение", "error")
       return
     }
 
     // Проверка размера файла (не более 5 МБ)
     if (file.size > 5 * 1024 * 1024) {
-      setStatusMessage({
-        text: "Размер файла не должен превышать 5 МБ",
-        type: "error",
-      })
+      showNotification("Размер файла не должен превышать 5 МБ", "error")
       return
     }
 
@@ -153,7 +136,6 @@ export default function ProfilePage() {
     setCropperOpen(false)
     setAvatarPreview(croppedImage)
     setIsUploadingAvatar(true)
-    setStatusMessage(null)
 
     try {
       // Преобразуем base64 в Blob
@@ -176,32 +158,21 @@ export default function ProfilePage() {
       const data = await uploadResponse.json()
 
       if (data.success) {
-        setStatusMessage({
-          text: "Аватар успешно обновлен",
-          type: "success",
-        })
+        // Показываем уведомление
+        showNotification("Аватар успешно обновлен", "success")
 
         // Обновляем данные пользователя
         await updateUserData()
       } else {
-        setStatusMessage({
-          text: data.message || "Не удалось обновить аватар",
-          type: "error",
-        })
+        // Показываем уведомление об ошибке
+        showNotification(data.message || "Не удалось обновить аватар", "error")
       }
     } catch (error) {
       console.error("Error uploading avatar:", error)
-      setStatusMessage({
-        text: "Произошла ошибка при загрузке аватара",
-        type: "error",
-      })
+      // Показываем уведомление об ошибке
+      showNotification("Произошла ошибка при загрузке аватара", "error")
     } finally {
       setIsUploadingAvatar(false)
-
-      // Скрываем сообщение через 3 секунды
-      setTimeout(() => {
-        setStatusMessage(null)
-      }, 3000)
     }
   }
 
@@ -238,18 +209,6 @@ export default function ProfilePage() {
             <p className="text-sm text-muted-foreground mt-1">Управляйте аккаунтом и параметрами</p>
           </div>
         </div>
-
-        {statusMessage && (
-          <div
-            className={`p-4 rounded-md ${
-              statusMessage.type === "success"
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
-            }`}
-          >
-            {statusMessage.text}
-          </div>
-        )}
 
         <div className="flex flex-col md:flex-row gap-6">
           <Card className="border-none shadow-md overflow-hidden md:w-1/3 h-full">
@@ -416,3 +375,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+

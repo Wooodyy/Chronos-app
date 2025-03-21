@@ -14,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/auth-context"
 import type { PriorityLevel } from "@/types/entry"
 
+// Импортируем хук для уведомлений
+import { useNotification } from "@/components/ui/notification"
+
 export default function NewTaskPage() {
   const router = useRouter()
   const { user } = useAuth()
@@ -26,6 +29,10 @@ export default function NewTaskPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Добавляем использование хука в компоненте
+  const { showNotification } = useNotification()
+
+  // Обновляем функцию handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
@@ -68,13 +75,16 @@ export default function NewTaskPage() {
       const data = await response.json()
 
       if (data.success) {
+        showNotification("Задача успешно создана", "success")
         router.push("/dashboard")
       } else {
         setError(data.message || "Не удалось создать задачу")
+        showNotification(data.message || "Не удалось создать задачу", "error")
       }
     } catch (error) {
       console.error("Error creating task:", error)
       setError("Произошла ошибка при создании задачи")
+      showNotification("Произошла ошибка при создании задачи", "error")
     } finally {
       setIsSaving(false)
     }

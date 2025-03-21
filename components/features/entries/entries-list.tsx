@@ -29,6 +29,24 @@ export function EntriesList({ entries, showDate = false, title }: EntriesListPro
       )
     : { all: entries }
 
+  // Функция для обновления статуса задачи
+  const handleTaskComplete = async (id: string, completed: boolean): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/tasks/${id}/complete`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ completed }),
+      })
+
+      return response.ok
+    } catch (error) {
+      console.error("Error updating task completion status:", error)
+      return false
+    }
+  }
+
   return (
     <div className="space-y-8">
       {title && (
@@ -52,7 +70,12 @@ export function EntriesList({ entries, showDate = false, title }: EntriesListPro
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence mode="popLayout">
               {dateEntries.map((entry, index) => (
-                <EntryCard key={entry.id} entry={entry} index={index} />
+                <EntryCard
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                  onTaskComplete={entry.type === "task" ? handleTaskComplete : undefined}
+                />
               ))}
             </AnimatePresence>
           </div>

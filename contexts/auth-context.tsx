@@ -28,6 +28,7 @@ interface AuthContextType {
   }) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   updateUserData: () => Promise<void>
+  refreshData: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -65,6 +66,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isUpdatingRef.current = false
     }
   }, [user])
+
+  // Функция для полного обновления данных (используется при навигации и перезагрузке)
+  const refreshData = useCallback(async () => {
+    if (!user?.id || isUpdatingRef.current) return
+
+    try {
+      isUpdatingRef.current = true
+      await updateUserData()
+      // Здесь не перезагружаем страницу, так как это будет делаться в компонентах
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+    } finally {
+      isUpdatingRef.current = false
+    }
+  }, [user, updateUserData])
 
   useEffect(() => {
     // Проверяем, есть ли сохраненный пользователь в localStorage
@@ -197,7 +213,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUserData }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        updateUserData,
+        refreshData,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

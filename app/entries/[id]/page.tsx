@@ -22,6 +22,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { Entry } from "@/types/entry"
 
+// Импортируем хук для уведомлений
+import { useNotification } from "@/components/ui/notification"
+
 export default function EntryPage() {
   const router = useRouter()
   const params = useParams()
@@ -29,6 +32,9 @@ export default function EntryPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Добавляем использование хука в компоненте
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     const fetchEntry = async () => {
@@ -113,6 +119,7 @@ export default function EntryPage() {
 
   const Icon = typeIcons[entry.type]
 
+  // Обновляем функцию handleDelete
   const handleDelete = async () => {
     // Если это задача из базы данных
     if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
@@ -122,20 +129,24 @@ export default function EntryPage() {
         })
 
         if (response.ok) {
+          showNotification("Запись успешно удалена", "success")
           router.push("/dashboard")
         } else {
-          console.error("Failed to delete task")
+          showNotification("Не удалось удалить запись", "error")
         }
       } catch (error) {
         console.error("Error deleting task:", error)
+        showNotification("Ошибка при удалении записи", "error")
       }
     } else {
       // Для статических записей просто перенаправляем
       console.log("Deleting entry:", entry.id)
+      showNotification("Запись успешно удалена", "success")
       router.push("/dashboard")
     }
   }
 
+  // Обновляем функцию toggleComplete
   const toggleComplete = async () => {
     // Если это задача из базы данных
     if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
@@ -150,15 +161,18 @@ export default function EntryPage() {
 
         if (response.ok) {
           setIsCompleted(!isCompleted)
+          showNotification(`Задача отмечена как ${!isCompleted ? "выполненная" : "невыполненная"}`, "success")
         } else {
-          console.error("Failed to update task completion status")
+          showNotification("Не удалось обновить статус задачи", "error")
         }
       } catch (error) {
         console.error("Error updating task:", error)
+        showNotification("Ошибка при обновлении статуса задачи", "error")
       }
     } else {
       // Для статических записей просто меняем состояние
       setIsCompleted(!isCompleted)
+      showNotification(`Задача отмечена как ${!isCompleted ? "выполненная" : "невыполненная"}`, "success")
     }
   }
 

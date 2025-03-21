@@ -15,6 +15,9 @@ import { entries } from "@/data/entries"
 import { format } from "date-fns"
 import type { Entry, PriorityLevel } from "@/types/entry"
 
+// Импортируем хук для уведомлений
+import { useNotification } from "@/components/ui/notification"
+
 export default function EditTaskPage() {
   const router = useRouter()
   const params = useParams()
@@ -28,6 +31,9 @@ export default function EditTaskPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [entry, setEntry] = useState<Entry | null>(null)
+
+  // Добавляем использование хука в компоненте
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     const fetchEntry = async () => {
@@ -86,6 +92,7 @@ export default function EditTaskPage() {
     }
   }
 
+  // Обновляем функцию handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
@@ -124,19 +131,24 @@ export default function EditTaskPage() {
 
         if (!data.success) {
           setError(data.message || "Не удалось обновить задачу")
+          showNotification(data.message || "Не удалось обновить задачу", "error")
           setIsSaving(false)
           return
+        } else {
+          showNotification("Задача успешно обновлена", "success")
         }
       } else {
         // Для статических записей просто имитируем сохранение
         await new Promise((resolve) => setTimeout(resolve, 1000))
         console.log({ id: params.id, title, description, priority, date, time, tags: tagArray })
+        showNotification("Задача успешно обновлена", "success")
       }
 
       router.push("/dashboard")
     } catch (error) {
       console.error("Error updating task:", error)
       setError("Произошла ошибка при обновлении задачи")
+      showNotification("Произошла ошибка при обновлении задачи", "error")
       setIsSaving(false)
     }
   }

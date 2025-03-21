@@ -11,7 +11,20 @@ export async function GET(request: NextRequest, { params }: { params: { login: s
 
     const tasks = await getUserTasks(login)
 
-    return NextResponse.json({ success: true, tasks })
+    // Устанавливаем заголовки для предотвращения кэширования
+    const headers = new Headers()
+    headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+    headers.set("Pragma", "no-cache")
+    headers.set("Expires", "0")
+    headers.set("Surrogate-Control", "no-store")
+
+    return NextResponse.json(
+      { success: true, tasks },
+      {
+        headers,
+        status: 200,
+      },
+    )
   } catch (error) {
     console.error("Ошибка при получении задач:", error)
     return NextResponse.json({ success: false, message: "Ошибка сервера при получении задач" }, { status: 500 })

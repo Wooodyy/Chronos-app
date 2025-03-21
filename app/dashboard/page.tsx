@@ -19,21 +19,10 @@ export default function DashboardPage() {
   const [isCompact, setIsCompact] = useState(false)
   const [dbTasks, setDbTasks] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { user, updateUserData } = useAuth()
-  const dataLoadedRef = useRef(false)
+  const { user } = useAuth()
+  const dataFetchedRef = useRef(false)
 
-  // Обновляем данные пользователя при загрузке страницы
-  useEffect(() => {
-    const initPage = async () => {
-      if (!dataLoadedRef.current && user?.id) {
-        dataLoadedRef.current = true
-        await updateUserData()
-      }
-    }
-
-    initPage()
-  }, [updateUserData, user?.id])
-
+  // Эффект для обработки изменения размера экрана
   useEffect(() => {
     const handleResize = () => {
       setIsCompact(window.innerWidth < 500)
@@ -44,16 +33,31 @@ export default function DashboardPage() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Загружаем задачи пользователя из базы данных
+  // Эффект для загрузки задач пользователя
   useEffect(() => {
-    const fetchUserTasks = async () => {
+    // Функция для загрузки задач
+    const fetchTasks = async () => {
       if (!user?.login) return
+
+      // Сбрасываем флаг при изменении пользователя
+      if (dataFetchedRef.current && user.login) {
+        dataFetchedRef.current = false
+      }
+
+      if (dataFetchedRef.current) return
 
       setIsLoading(true)
       try {
-        // Добавляем случайный параметр для предотвращения кэширования
         const timestamp = new Date().getTime()
-        const response = await fetch(`/api/tasks/user/${user.login}?t=${timestamp}`)
+        const response = await fetch(`/api/tasks/user/${user.login}?t=${timestamp}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        })
+
         const data = await response.json()
 
         if (data.success && data.tasks) {
@@ -63,13 +67,12 @@ export default function DashboardPage() {
         console.error("Error fetching user tasks:", error)
       } finally {
         setIsLoading(false)
+        dataFetchedRef.current = true
       }
     }
 
-    if (user) {
-      fetchUserTasks()
-    }
-  }, [user])
+    fetchTasks()
+  }, [user?.login])
 
   // Получаем напоминания и заметки из статических данных
   const staticRemindersAndNotes = staticEntries.filter((entry) => entry.type === "reminder" || entry.type === "note")
