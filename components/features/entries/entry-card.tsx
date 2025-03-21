@@ -12,7 +12,7 @@ import {
   differenceInMinutes,
 } from "date-fns"
 import { ru } from "date-fns/locale"
-import { Bell, FileText, ListTodo, Clock, CheckCircle, AlertTriangle } from "lucide-react"
+import { Bell, FileText, ListTodo, Clock, Check, AlertTriangle } from "lucide-react"
 import type { Entry } from "@/types/entry"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
@@ -41,7 +41,7 @@ const priorityLabels = {
 
 // Function to calculate and format time remaining
 function getTimeRemaining(date: Date): string {
-  const now = new Date()
+  const now = new Date().toISOString();
 
   // If the date is in the past
   if (isBefore(date, now)) {
@@ -182,16 +182,16 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                       src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Animation%20-%201742562962548%20%281%29-OdSF1TwBXuXhQeyASo51sRaAZhPggB.json"
                       autoplay={true}
                       loop={false}
-                      className="w-6 h-6"
+                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12"
                     />
                   ) : isCompleted ? (
-                    <div className="w-6 h-6 rounded-md bg-blue-500 flex items-center justify-center">
-                      <CheckCircle className="h-4 w-4 text-white" />
+                    <div className="w-6 h-6 rounded-sm bg-blue-500 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-white" />
                     </div>
                   ) : (
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors",
+                        "w-6 h-6 rounded-sm border-2 flex items-center justify-center transition-colors",
                         isHovered ? "border-blue-500 bg-blue-100/50 dark:bg-blue-900/30" : "border-muted-foreground/30",
                       )}
                     />
