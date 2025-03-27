@@ -13,8 +13,7 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: "Chronos",
-  description: "Ваш личный цифровой ассистент для задач, напоминаний и заметок"
+  title: "Chronos"
 }
 
 export default function RootLayout({

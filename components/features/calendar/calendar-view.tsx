@@ -433,7 +433,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20"
             >
               <CalendarIcon className="h-5 w-5 text-primary" />
             </motion.div>

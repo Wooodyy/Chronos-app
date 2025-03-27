@@ -2,15 +2,17 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ListTodo } from "lucide-react"
+import { format } from "date-fns"
+import { ru } from "date-fns/locale"
+import { ArrowLeft, ListTodo, Calendar, Clock, Flag, Tag, Plus, Save, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAuth } from "@/contexts/auth-context"
 import type { PriorityLevel } from "@/types/entry"
 
@@ -23,18 +25,72 @@ export default function NewTaskPage() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<PriorityLevel>("medium")
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
-  const [time, setTime] = useState("12:00")
-  const [tags, setTags] = useState("")
+  const [date, setDate] = useState<Date>(new Date())
+  const [tags, setTags] = useState<string[]>([])
+  const [newTag, setNewTag] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Refs для элементов редактирования
+  const titleRef = useRef<HTMLInputElement>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
 
   // Добавляем использование хука в компоненте
   const { showNotification } = useNotification()
 
+  // Обработчики изменений полей
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value)
+  }
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value)
+  }
+
+  const handlePriorityChange = (value: PriorityLevel) => {
+    setPriority(value)
+  }
+
+  const handleDateChange = (newDate: Date) => {
+    const updatedDate = new Date(date)
+    updatedDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate())
+    setDate(updatedDate)
+  }
+
+  const handleTimeChange = (hours: number, minutes: number) => {
+    const updatedDate = new Date(date)
+    updatedDate.setHours(hours, minutes)
+    setDate(updatedDate)
+  }
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      const updatedTags = [...tags, newTag.trim()]
+      setTags(updatedTags)
+      setNewTag("")
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const updatedTags = tags.filter((tag) => tag !== tagToRemove)
+    setTags(updatedTags)
+  }
+
+  const handleNewTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleAddTag()
+    }
+  }
+
   // Обновляем функцию handleSubmit
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
+    if (!title.trim()) {
+      titleRef.current?.focus()
+      showNotification("Пожалуйста, введите заголовок задачи", "error")
+      return
+    }
+
     setIsSaving(true)
     setError(null)
 
@@ -45,16 +101,8 @@ export default function NewTaskPage() {
     }
 
     try {
-      // Формируем дату и время
-      const taskDate = new Date(`${date}T${time}:00`)
-
       // Преобразуем теги из строки в массив
-      const tagArray = tags
-        ? tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag.length > 0)
-        : []
+      const tagArray = tags || []
 
       // Отправляем данные на сервер
       const response = await fetch("/api/tasks", {
@@ -66,7 +114,7 @@ export default function NewTaskPage() {
           login: user.login,
           title,
           description,
-          date: taskDate.toISOString(),
+          date: date.toISOString(),
           priority,
           tags: tagArray,
         }),
@@ -90,108 +138,236 @@ export default function NewTaskPage() {
     }
   }
 
-  // Функция для безопасного обновления приоритета
-  const handlePriorityChange = (value: string) => {
-    // Проверяем, что значение является допустимым PriorityLevel
-    if (value === "low" || value === "medium" || value === "high") {
-      setPriority(value as PriorityLevel)
-    } else {
-      console.warn(`Недопустимое значение приоритета: ${value}`)
-      setPriority("medium") // Устанавливаем значение по умолчанию
-    }
+  const priorityColors = {
+    low: "text-green-600 dark:text-green-400",
+    medium: "text-amber-600 dark:text-amber-400",
+    high: "text-red-600 dark:text-red-400",
+  }
+
+  const priorityLabels = {
+    low: "Низкий",
+    medium: "Средний",
+    high: "Высокий",
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full bg-background">
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 p-4 md:p-8 max-w-full mx-auto w-full">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-full h-10 w-10">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
-              <ListTodo className="h-4 w-4 text-blue-500" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Новая задача</h1>
+      <div className="flex-1 max-w-4xl mx-auto w-full">
+        {/* Верхняя панель */}
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+
+            <Badge
+              variant="outline"
+              className="ml-2 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+            >
+              <ListTodo className="h-3 w-3 mr-1" />
+              Новая задача
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1 text-sm"
+              onClick={handleSubmit}
+              disabled={isSaving || !title.trim()}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Сохранить
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 rounded-md">{error}</div>
-        )}
+        {/* Основное содержимое */}
+        <div className="p-4 md:p-8 space-y-8">
+          {error && (
+            <div className="p-4 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 rounded-md">{error}</div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <Card className="border-none shadow-md overflow-hidden">
-            <div className="h-1 bg-blue-500" />
-            <CardHeader>
-              <div className="space-y-2">
-                <Label htmlFor="title">Заголовок</Label>
-                <Input
-                  id="title"
-                  placeholder="Введите заголовок задачи"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="description">Описание</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Введите описание задачи..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
+          {/* Заголовок */}
+          <div className="space-y-2">
+            <Input
+              ref={titleRef}
+              value={title}
+              onChange={handleTitleChange}
+              className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+              placeholder="Без заголовка"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="priority">Приоритет</Label>
-                <Select value={priority} onValueChange={handlePriorityChange}>
-                  <SelectTrigger id="priority">
-                    <SelectValue placeholder="Выберите приоритет" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Низкий</SelectItem>
-                    <SelectItem value="medium">Средний</SelectItem>
-                    <SelectItem value="high">Высокий</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="date">Дедлайн</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+          {/* Метаданные */}
+          <div className="flex flex-wrap gap-4">
+            {/* Дата */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 h-8">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {format(date, "d MMMM yyyy", { locale: ru })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-4">
+                  <div className="grid gap-2">
+                    <div className="grid gap-1">
+                      <label className="text-sm font-medium">Дата</label>
+                      <Input
+                        type="date"
+                        value={format(date, "yyyy-MM-dd")}
+                        onChange={(e) => {
+                          const [year, month, day] = e.target.value.split("-").map(Number)
+                          const newDate = new Date(date)
+                          newDate.setFullYear(year, month - 1, day)
+                          handleDateChange(newDate)
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </PopoverContent>
+            </Popover>
 
-              <div className="space-y-2">
-                <Label htmlFor="tags">Теги (через запятую)</Label>
+            {/* Время */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 h-8">
+                  <Clock className="h-3.5 w-3.5" />
+                  {format(date, "HH:mm", { locale: ru })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-4">
+                  <div className="grid gap-2">
+                    <div className="grid gap-1">
+                      <label className="text-sm font-medium">Время</label>
+                      <Input
+                        type="time"
+                        value={format(date, "HH:mm")}
+                        onChange={(e) => {
+                          const [hours, minutes] = e.target.value.split(":").map(Number)
+                          handleTimeChange(hours, minutes)
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Приоритет */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("gap-2 h-8", priorityColors[priority])}>
+                  <Flag className="h-3.5 w-3.5" />
+                  {priorityLabels[priority]}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-start gap-2 mb-1", priorityColors.low)}
+                    onClick={() => handlePriorityChange("low")}
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                    Низкий
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-start gap-2 mb-1", priorityColors.medium)}
+                    onClick={() => handlePriorityChange("medium")}
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                    Средний
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-start gap-2", priorityColors.high)}
+                    onClick={() => handlePriorityChange("high")}
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                    Высокий
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Описание */}
+          <div className="pt-4 border-t">
+            <Textarea
+              ref={descriptionRef}
+              value={description}
+              onChange={handleDescriptionChange}
+              className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
+              placeholder="Добавьте описание..."
+            />
+          </div>
+
+          {/* Теги */}
+          <div className="pt-4 border-t">
+            <div className="flex items-center mb-2">
+              <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Теги</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-3">
+              {tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="px-3 py-1 bg-secondary/50 hover:bg-secondary/70 transition-colors group"
+                >
+                  {tag}
+                  <button
+                    className="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemoveTag(tag)}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+
+              <div className="flex items-center">
                 <Input
-                  id="tags"
-                  placeholder="работа, срочно, проект"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={handleNewTagKeyDown}
+                  className="h-7 px-2 w-32 text-sm"
+                  placeholder="Новый тег"
                 />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 ml-1"
+                  onClick={handleAddTag}
+                  disabled={!newTag.trim()}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
-                Отмена
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Сохранение..." : "Сохранить"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </form>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Mobile padding for bottom navigation */}

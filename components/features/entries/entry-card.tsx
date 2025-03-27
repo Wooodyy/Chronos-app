@@ -41,7 +41,7 @@ const priorityLabels = {
 
 // Function to calculate and format time remaining
 function getTimeRemaining(date: Date): string {
-  const now = new Date().toISOString();
+  const now = new Date().toISOString()
 
   // If the date is in the past
   if (isBefore(date, now)) {
@@ -100,25 +100,31 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
     e.stopPropagation()
 
     if (entry.type === "task") {
-      setIsAnimating(true)
+      // Запускаем анимацию только если задача отмечается как выполненная
+      const willBeCompleted = !isCompleted
+      if (willBeCompleted) {
+        setIsAnimating(true)
+      }
 
       // If there's a callback for updating task status
       if (onTaskComplete) {
         try {
-          const success = await onTaskComplete(entry.id, !isCompleted)
+          const success = await onTaskComplete(entry.id, willBeCompleted)
 
           if (success) {
             // If task was successfully updated, change state
-            setIsCompleted(!isCompleted)
+            setIsCompleted(willBeCompleted)
             showNotification(
-              !isCompleted ? "Задача отмечена как выполненная" : "Задача отмечена как невыполненная",
+              willBeCompleted ? "Задача отмечена как выполненная" : "Задача отмечена как невыполненная",
               "success",
             )
 
-            // Allow animation to complete before stopping
-            setTimeout(() => {
-              setIsAnimating(false)
-            }, 1000)
+            // Allow animation to complete before stopping (только если была запущена анимация)
+            if (willBeCompleted) {
+              setTimeout(() => {
+                setIsAnimating(false)
+              }, 1000)
+            }
           } else {
             setIsAnimating(false)
             showNotification("Не удалось обновить статус задачи", "error")
@@ -129,10 +135,12 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
         }
       } else {
         // If no callback, just change local state
-        setIsCompleted(!isCompleted)
-        setTimeout(() => {
-          setIsAnimating(false)
-        }, 1000)
+        setIsCompleted(willBeCompleted)
+        if (willBeCompleted) {
+          setTimeout(() => {
+            setIsAnimating(false)
+          }, 1000)
+        }
       }
     }
   }
@@ -186,7 +194,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                     />
                   ) : isCompleted ? (
                     <div className="w-6 h-6 rounded-sm bg-blue-500 flex items-center justify-center">
-                      <Check className="h-4 w-4 text-white" />
+                      <Check strokeWidth={5} className="h-4 w-4 text-white" />
                     </div>
                   ) : (
                     <div
