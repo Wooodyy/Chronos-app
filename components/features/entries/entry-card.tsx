@@ -149,6 +149,24 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
   const timeRemaining = getTimeRemaining(entry.date)
   const isPastDue = timeRemaining === "Просрочено" && !isCompleted
 
+  // Определяем URL для перехода в зависимости от типа записи
+  const getEntryUrl = () => {
+    // Get the current path to use as source
+    const currentPath = window.location.pathname
+    const source = currentPath.includes("/notes") ? "notes" : currentPath.includes("/tasks") ? "tasks" : "dashboard"
+
+    switch (entry.type) {
+      case "task":
+        return `/tasks/${entry.id}?source=${source}`
+      case "note":
+        return `/notes/${entry.id}?source=${source}`
+      case "reminder":
+        return `/reminders/${entry.id}?source=${source}`
+      default:
+        return `/entries/${entry.id}?source=${source}`
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -210,7 +228,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
           </div>
 
           {/* Card content */}
-          <Link href={`/entries/${entry.id}`} className="flex-grow min-w-0 flex flex-col justify-between h-full">
+          <Link href={getEntryUrl()} className="flex-grow min-w-0 flex flex-col justify-between h-full">
             <div className="flex flex-col">
               {/* Header with title and time */}
               <div className="flex items-start justify-between gap-2 mb-2">

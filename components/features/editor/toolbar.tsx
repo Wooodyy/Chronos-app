@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
-interface EditorToolbarProps {
+export interface EditorToolbarProps {
   editor: any
   className?: string
 }
@@ -100,11 +100,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
           aria-label="Заголовок 1"
           data-state={editor.isActive("heading", { level: 1 }) ? "on" : "off"}
           onClick={() => {
-            if (editor.isActive("heading", { level: 1 })) {
-              editor.chain().focus().setParagraph().run()
-            } else {
-              editor.chain().focus().setHeading({ level: 1 }).run()
-            }
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
           }}
         >
           <Heading1 className="h-4 w-4" />
@@ -114,11 +110,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
           aria-label="Заголовок 2"
           data-state={editor.isActive("heading", { level: 2 }) ? "on" : "off"}
           onClick={() => {
-            if (editor.isActive("heading", { level: 2 })) {
-              editor.chain().focus().setParagraph().run()
-            } else {
-              editor.chain().focus().setHeading({ level: 2 }).run()
-            }
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
           }}
         >
           <Heading2 className="h-4 w-4" />
@@ -128,11 +120,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
           aria-label="Заголовок 3"
           data-state={editor.isActive("heading", { level: 3 }) ? "on" : "off"}
           onClick={() => {
-            if (editor.isActive("heading", { level: 3 })) {
-              editor.chain().focus().setParagraph().run()
-            } else {
-              editor.chain().focus().setHeading({ level: 3 }).run()
-            }
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
           }}
         >
           <Heading3 className="h-4 w-4" />

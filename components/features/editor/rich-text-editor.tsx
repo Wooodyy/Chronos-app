@@ -25,7 +25,6 @@ export function RichTextEditor({
   className,
   minHeight = "200px",
 }: RichTextEditorProps) {
-  // Заменим неправильную конфигурацию заголовков
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -56,10 +55,11 @@ export function RichTextEditor({
         types: ["textStyle"],
       }),
     ],
-    content: value,
+    content: value || "", // Ensure content is never undefined
     editorProps: {
       attributes: {
-        class: cn("prose prose-sm dark:prose-invert focus:outline-none max-w-none", "min-h-[200px] p-4"),
+        class: "prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[200px] p-4",
+        style: minHeight ? `min-height: ${minHeight}` : "",
       },
     },
     onUpdate: ({ editor }) => {
@@ -70,7 +70,7 @@ export function RichTextEditor({
   return (
     <div className={cn("border rounded-md", className)}>
       <EditorToolbar editor={editor} className="border-b rounded-t-md" />
-      <EditorContent editor={editor} className={cn("min-h-[200px]", minHeight && `min-h-[${minHeight}]`)} />
+      <EditorContent editor={editor} />
     </div>
   )
 }

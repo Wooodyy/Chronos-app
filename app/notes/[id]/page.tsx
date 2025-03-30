@@ -2,14 +2,14 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Tag, Trash2, X } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { format } from "date-fns"
+import { ru } from "date-fns/locale"
+import { ArrowLeft, FileText, Trash2, Loader2, Tag, MoreHorizontal, Plus, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+import { entries } from "@/data/entries"
+import { useState, useEffect, useRef } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,223 +19,298 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useToast } from "@/components/ui/use-toast"
+import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import type { Entry } from "@/types/entry"
+import { RichTextEditor } from "@/components/features/editor/rich-text-editor"
+import { useNotification } from "@/components/ui/notification"
 
-// Заглушка для данных заметки
-const mockNote = {
-  id: "1",
-  title: "Идеи для проекта",
-  content:
-    "1. Добавить темную тему\n2. Улучшить мобильную версию\n3. Добавить экспорт в PDF\n4. Интеграция с календарем",
-  tags: ["Проект", "Идеи", "Разработка"],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-}
-
-export default function NotePage({ params }: { params: { id: string } }) {
+export default function NotePage() {
   const router = useRouter()
-  const { toast } = useToast()
+  const params = useParams()
+  const searchParams = useParams()
+  const [source, setSource] = useState("dashboard")
+  const [note, setNote] = useState<Entry | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Состояния для редактируемых полей
+  const [title, setTitle] = useState("")
+  const [content, setContent] = useState("")
+  const [date, setDate] = useState<Date | null>(null)
+  const [tags, setTags] = useState<string[]>([])
+  const [newTag, setNewTag] = useState("")
+
+  // Состояние для отслеживания изменений
+  const [isEdited, setIsEdited] = useState(false)
+
+  // Refs для элементов редактирования
   const titleRef = useRef<HTMLInputElement>(null)
 
-  const [note, setNote] = useState(mockNote)
-  const [originalNote, setOriginalNote] = useState(mockNote)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [newTag, setNewTag] = useState("")
-  const [hasChanges, setHasChanges] = useState(false)
+  // Добавляем использование хука в компоненте
+  const { showNotification } = useNotification()
 
-  // Загрузка данных заметки
   useEffect(() => {
-    // В реальном приложении здесь был бы API-запрос для получения данных заметки
-    // const fetchNote = async () => {
-    //   const response = await fetch(`/api/notes/${params.id}`)
-    //   const data = await response.json()
-    //   setNote(data)
-    //   setOriginalNote(data)
-    // }
-    // fetchNote()
+    const fetchNote = async () => {
+      setIsLoading(true)
 
-    // Фокус на заголовке при загрузке
-    if (titleRef.current) {
-      titleRef.current.focus()
+      // Ищем заметку в статическом массиве
+      const staticNote = entries.find((e) => e.id === params.id && e.type === "note")
+
+      if (staticNote) {
+        setNote(staticNote)
+        initializeFormFields(staticNote)
+        setIsLoading(false)
+        return
+      }
+
+      // Если не нашли в статическом массиве, можно добавить запрос к API
+      // для получения заметки из базы данных (если это будет реализовано)
+
+      // Если не нашли заметку, перенаправляем на список заметок
+      router.push("/notes")
+      setIsLoading(false)
     }
-  }, [params.id])
 
-  // Проверка наличия изменений
-  useEffect(() => {
-    const noteChanged =
-      note.title !== originalNote.title ||
-      note.content !== originalNote.content ||
-      JSON.stringify(note.tags) !== JSON.stringify(originalNote.tags)
+    fetchNote()
 
-    setHasChanges(noteChanged)
-  }, [note, originalNote])
+    // Get the source from URL query parameters
+    const urlParams = new URLSearchParams(window.location.search)
+    const sourceParam = urlParams.get("source")
+    if (sourceParam) {
+      setSource(sourceParam)
+    }
+  }, [params.id, router])
 
+  // Функция для инициализации полей формы
+  const initializeFormFields = (note: Entry) => {
+    setTitle(note.title)
+    setContent(note.description || "")
+
+    // Устанавливаем дату
+    setDate(new Date(note.date))
+
+    // Устанавливаем теги
+    setTags(note.tags || [])
+
+    // Сбрасываем флаг изменений
+    setIsEdited(false)
+  }
+
+  // Обработчики изменений полей
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value)
+    setIsEdited(true)
+  }
+
+  const handleContentChange = (html: string) => {
+    setContent(html)
+    setIsEdited(true)
+  }
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      const updatedTags = [...tags, newTag.trim()]
+      setTags(updatedTags)
+      setNewTag("")
+      setIsEdited(true)
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const updatedTags = tags.filter((tag) => tag !== tagToRemove)
+    setTags(updatedTags)
+    setIsEdited(true)
+  }
+
+  const handleNewTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleAddTag()
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground">Загрузка...</p>
+      </div>
+    )
+  }
+
+  if (!note) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+          <FileText className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <h2 className="text-2xl font-bold">Заметка не найдена</h2>
+        <p className="text-muted-foreground text-center max-w-md">
+          Заметка, которую вы ищете, не существует или была удалена.
+        </p>
+        <Button onClick={() => router.push("/notes")} className="mt-4">
+          Вернуться к заметкам
+        </Button>
+      </div>
+    )
+  }
+
+  // Обновляем функцию handleDelete
+  const handleDelete = async () => {
+    // For static notes just redirect
+    console.log("Deleting note:", note.id)
+    showNotification("Заметка успешно удалена", "success")
+    router.push(source === "notes" ? "/notes" : "/dashboard")
+  }
+
+  // Функция для сохранения изменений
   const handleSave = async () => {
-    if (!note.title.trim()) {
-      toast({
-        title: "Ошибка",
-        description: "Заголовок заметки не может быть пустым",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!note || !date) return
 
     setIsSaving(true)
+    setError(null)
 
     try {
-      // В реальном приложении здесь был бы API-запрос для сохранения заметки
-      // await fetch(`/api/notes/${params.id}`, {
-      //   method: "PUT",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(note),
-      // })
+      // Для статических заметок просто имитируем сохранение
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Имитация задержки сохранения
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setOriginalNote(note)
-      setHasChanges(false)
-
-      toast({
-        title: "Заметка сохранена",
-        description: "Ваша заметка успешно сохранена",
+      // Обновляем локальное состояние
+      setNote({
+        ...note,
+        title,
+        description: content,
+        date,
+        tags,
       })
+
+      showNotification("Заметка успешно обновлена", "success")
+
+      // Обновляем время последнего сохранения
+      setLastSaved(new Date())
+
+      // Сбрасываем флаг изменений
+      setIsEdited(false)
     } catch (error) {
-      toast({
-        title: "Ошибка сохранения",
-        description: "Не удалось сохранить заметку. Попробуйте еще раз.",
-        variant: "destructive",
-      })
+      console.error("Error updating note:", error)
+      setError("Произошла ошибка при обновлении заметки")
+      showNotification("Произошла ошибка при обновлении заметки", "error")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async () => {
-    try {
-      // В реальном приложении здесь был бы API-запрос для удаления заметки
-      // await fetch(`/api/notes/${params.id}`, {
-      //   method: "DELETE",
-      // })
-
-      // Имитация задержки удаления
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast({
-        title: "Заметка удалена",
-        description: "Ваша заметка успешно удалена",
-      })
-
-      router.push("/notes")
-    } catch (error) {
-      toast({
-        title: "Ошибка удаления",
-        description: "Не удалось удалить заметку. Попробуйте еще раз.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const addTag = () => {
-    if (!newTag.trim()) return
-    if (note.tags.includes(newTag.trim())) {
-      toast({
-        title: "Тег уже существует",
-        description: "Этот тег уже добавлен к заметке",
-      })
-      return
-    }
-
-    setNote({
-      ...note,
-      tags: [...note.tags, newTag.trim()],
-    })
-    setNewTag("")
-  }
-
-  const removeTag = (tagToRemove: string) => {
-    setNote({
-      ...note,
-      tags: note.tags.filter((tag) => tag !== tagToRemove),
-    })
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && newTag.trim()) {
-      e.preventDefault()
-      addTag()
-    }
-  }
-
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Плавающая верхняя панель */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/notes")} className="rounded-full">
+    <div className="flex flex-col min-h-full bg-background">
+      {/* Mobile padding for header */}
+      <div className="h-16 md:hidden" />
+
+      <div className="flex-1 max-w-4xl mx-auto w-full">
+        {/* Верхняя панель */}
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push(source === "notes" ? "/notes" : "/dashboard")}
+              className="rounded-full"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="text-sm text-muted-foreground">
-              {new Date(note.updatedAt).toLocaleDateString()} • Заметка
-            </div>
+
+            <Badge
+              variant="outline"
+              className="ml-2 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+            >
+              <FileText className="h-3 w-3 mr-1" />
+              Заметка
+            </Badge>
+
+            {lastSaved && (
+              <span className="text-xs text-muted-foreground ml-2">
+                Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
+              </span>
+            )}
+
+            {isSaving && (
+              <div className="flex items-center text-xs text-muted-foreground ml-2">
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                Сохранение...
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            {hasChanges && (
-              <Button onClick={handleSave} disabled={isSaving} className="gap-1">
-                <Save className="h-4 w-4" />
-                {isSaving ? "Сохранение..." : "Сохранить"}
+            {isEdited && (
+              <Button variant="default" size="sm" className="gap-1 text-sm" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Сохранение...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Сохранить
+                  </>
+                )}
               </Button>
             )}
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-5 w-5" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <MoreHorizontal className="h-5 w-5" />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Удалить заметку?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Это действие нельзя отменить. Заметка будет удалена навсегда.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Отмена</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                    Удалить
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Удалить
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-      </div>
 
-      {/* Основное содержимое */}
-      <div className="container flex-1 px-4 py-6 max-w-4xl mx-auto">
-        <div className="space-y-6">
+        {/* Основное содержимое */}
+        <div className="p-4 md:p-8 space-y-8">
+          {error && (
+            <div className="p-4 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 rounded-md">{error}</div>
+          )}
+
           {/* Заголовок */}
-          <Input
-            ref={titleRef}
-            value={note.title}
-            onChange={(e) => setNote({ ...note, title: e.target.value })}
-            placeholder="Заголовок заметки"
-            className="text-3xl font-bold border-none px-0 h-auto focus-visible:ring-0"
-          />
+          <div className="space-y-2">
+            <Input
+              ref={titleRef}
+              value={title}
+              onChange={handleTitleChange}
+              className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+              placeholder="Без заголовка"
+            />
+          </div>
 
           {/* Теги */}
           <div className="flex flex-wrap items-center gap-2">
-            {note.tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="flex items-center gap-1 px-3 py-1">
+            {tags.map((tag) => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="px-3 py-1 bg-secondary/50 hover:bg-secondary/70 transition-colors group"
+              >
                 {tag}
-                <button onClick={() => removeTag(tag)} className="ml-1 rounded-full hover:bg-muted p-0.5">
-                  <X className="h-3 w-3" />
+                <button
+                  className="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleRemoveTag(tag)}
+                >
+                  ×
                 </button>
               </Badge>
             ))}
@@ -245,30 +320,54 @@ export default function NotePage({ params }: { params: { id: string } }) {
               <Input
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Добавить тег..."
-                className="border-none w-32 h-8 focus-visible:ring-0 p-0"
+                onKeyDown={handleNewTagKeyDown}
+                className="h-7 px-2 w-32 text-sm border-none focus-visible:ring-0"
+                placeholder="Новый тег"
               />
-              <Button variant="ghost" size="sm" onClick={addTag} disabled={!newTag.trim()} className="h-8 px-2">
-                Добавить
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 ml-1"
+                onClick={handleAddTag}
+                disabled={!newTag.trim()}
+              >
+                <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
 
-          <Separator />
-
-          {/* Содержимое */}
-          <Textarea
-            value={note.content}
-            onChange={(e) => setNote({ ...note, content: e.target.value })}
-            placeholder="Начните писать содержимое заметки..."
-            className="min-h-[300px] border-none resize-none focus-visible:ring-0 text-base leading-relaxed"
-          />
+          {/* Редактор содержимого - используем RichTextEditor для заметок */}
+          <div className="pt-4">
+            <RichTextEditor
+              value={content}
+              onChange={handleContentChange}
+              placeholder="Начните писать содержимое заметки..."
+              className="border-none shadow-none"
+              minHeight="300px"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Мобильный отступ для нижней навигации */}
+      {/* Mobile padding for bottom navigation */}
       <div className="h-20 md:hidden" />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Заметка будет навсегда удалена из вашей учетной записи.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

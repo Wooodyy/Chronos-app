@@ -22,7 +22,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { entries } from "@/data/entries"
 import { cn } from "@/lib/utils"
 import { useState, useEffect, useRef } from "react"
 import {
@@ -36,20 +35,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { Entry, PriorityLevel } from "@/types/entry"
-import { RichTextEditor } from "@/components/features/editor/rich-text-editor"
-
-// Импортируем хук для уведомлений
 import { useNotification } from "@/components/ui/notification"
 
-export default function EntryPage() {
+export default function TaskPage() {
   const router = useRouter()
   const params = useParams()
-  const searchParams = useParams()
-  const [source, setSource] = useState("dashboard")
-  const [entry, setEntry] = useState<Entry | null>(null)
+  const [task, setTask] = useState<Entry | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -74,6 +69,9 @@ export default function EntryPage() {
   // Добавляем использование хука в компоненте
   const { showNotification } = useNotification()
 
+  const searchParams = useParams()
+  const [source, setSource] = useState("dashboard")
+
   useEffect(() => {
     // Get the source from URL query parameters
     const urlParams = new URLSearchParams(window.location.search)
@@ -81,43 +79,33 @@ export default function EntryPage() {
     if (sourceParam) {
       setSource(sourceParam)
     }
+  }, [])
 
-    const fetchEntry = async () => {
+  useEffect(() => {
+    const fetchTask = async () => {
       setIsLoading(true)
 
-      // Сначала ищем в статическом массиве напоминания и заметки
-      const staticEntry = entries.find((e) => e.id === params.id && (e.type === "reminder" || e.type === "note"))
-
-      if (staticEntry) {
-        setEntry(staticEntry)
-        setIsCompleted(staticEntry.completed || false)
-        initializeFormFields(staticEntry)
-        setIsLoading(false)
-        return
-      }
-
-      // Если не нашли в статическом массиве, ищем задачу в базе данных
       try {
         const response = await fetch(`/api/tasks/${params.id}`)
         const data = await response.json()
 
         if (data.success && data.task) {
-          setEntry(data.task)
+          setTask(data.task)
           setIsCompleted(data.task.completed || false)
           initializeFormFields(data.task)
         } else {
-          // Если не нашли нигде, перенаправляем на дашборд
-          router.push("/dashboard")
+          // Если не нашли задачу, перенаправляем на список задач
+          router.push("/tasks")
         }
       } catch (error) {
-        console.error("Error fetching entry:", error)
-        router.push("/dashboard")
+        console.error("Error fetching task:", error)
+        router.push("/tasks")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchEntry()
+    fetchTask()
   }, [params.id, router])
 
   // Функция для инициализации полей формы
@@ -149,8 +137,8 @@ export default function EntryPage() {
     setIsEdited(true)
   }
 
-  const handleDescriptionChange = (html: string) => {
-    setDescription(html)
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value)
     setIsEdited(true)
   }
 
@@ -210,39 +198,21 @@ export default function EntryPage() {
     )
   }
 
-  if (!entry) {
+  if (!task) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
           <Calendar className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h2 className="text-2xl font-bold">Запись не найдена</h2>
+        <h2 className="text-2xl font-bold">Задача не найдена</h2>
         <p className="text-muted-foreground text-center max-w-md">
-          Запись, которую вы ищете, не существует или была удалена.
+          Задача, которую вы ищете, не существует или была удалена.
         </p>
-        <Button onClick={() => router.back()} className="mt-4">
-          Вернуться назад
+        <Button onClick={() => router.push("/tasks")} className="mt-4">
+          Вернуться к задачам
         </Button>
       </div>
     )
-  }
-
-  const typeLabels = {
-    task: "Задача",
-    reminder: "Напоминание",
-    note: "Заметка",
-  }
-
-  const typeColors = {
-    task: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
-    reminder: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
-    note: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-  }
-
-  const typeIcons = {
-    task: ListTodo,
-    reminder: Clock,
-    note: Calendar,
   }
 
   const priorityColors = {
@@ -257,135 +227,88 @@ export default function EntryPage() {
     high: "Высокий",
   }
 
-  const Icon = typeIcons[entry.type]
-
   // Обновляем функцию handleDelete
   const handleDelete = async () => {
-    // If this is a task from the database
-    if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
-      try {
-        const response = await fetch(`/api/tasks/${entry.id}`, {
-          method: "DELETE",
-        })
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: "DELETE",
+      })
 
-        if (response.ok) {
-          showNotification("Запись успешно удалена", "success")
-          if (source === "notes") {
-            router.push("/notes")
-          } else if (source === "tasks") {
-            router.push("/tasks")
-          } else {
-            router.push("/dashboard")
-          }
-        } else {
-          showNotification("Не удалось удалить запись", "error")
-        }
-      } catch (error) {
-        console.error("Error deleting task:", error)
-        showNotification("Ошибка при удалении записи", "error")
-      }
-    } else {
-      // For static entries just redirect
-      console.log("Deleting entry:", entry.id)
-      showNotification("Запись успешно удалена", "success")
-      if (source === "notes") {
-        router.push("/notes")
-      } else if (source === "tasks") {
-        router.push("/tasks")
+      if (response.ok) {
+        showNotification("Задача успешно удалена", "success")
+        router.push(source === "tasks" ? "/tasks" : "/dashboard")
       } else {
-        router.push("/dashboard")
+        showNotification("Не удалось удалить задачу", "error")
       }
+    } catch (error) {
+      console.error("Error deleting task:", error)
+      showNotification("Ошибка при удалении задачи", "error")
     }
   }
 
   // Обновляем функцию toggleComplete
   const toggleComplete = async () => {
-    // Если это задача из базы данных
-    if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
-      try {
-        const response = await fetch(`/api/tasks/${entry.id}/complete`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ completed: !isCompleted }),
-        })
+    try {
+      const response = await fetch(`/api/tasks/${task.id}/complete`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ completed: !isCompleted }),
+      })
 
-        if (response.ok) {
-          setIsCompleted(!isCompleted)
-          showNotification(`Задача отмечена как ${!isCompleted ? "выполненная" : "невыполненная"}`, "success")
-        } else {
-          showNotification("Не удалось обновить статус задачи", "error")
-        }
-      } catch (error) {
-        console.error("Error updating task:", error)
-        showNotification("Ошибка при обновлении статуса задачи", "error")
+      if (response.ok) {
+        setIsCompleted(!isCompleted)
+        showNotification(`Задача отмечена как ${!isCompleted ? "выполненная" : "невыполненная"}`, "success")
+      } else {
+        showNotification("Не удалось обновить статус задачи", "error")
       }
-    } else {
-      // Для статических записей просто меняем состояние
-      setIsCompleted(!isCompleted)
-      showNotification(`Задача отмечена как ${!isCompleted ? "выполненная" : "невыполненная"}`, "success")
+    } catch (error) {
+      console.error("Error updating task:", error)
+      showNotification("Ошибка при обновлении статуса задачи", "error")
     }
   }
 
   // Функция для сохранения изменений
   const handleSave = async () => {
-    if (!entry || !date) return
+    if (!task || !date) return
 
     setIsSaving(true)
     setError(null)
 
     try {
-      // Если это задача из базы данных
-      if (entry.type === "task" && !entries.find((e) => e.id === entry.id)) {
-        // Отправляем данные на сервер
-        const response = await fetch(`/api/tasks/${entry.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title,
-            description,
-            date: date.toISOString(),
-            priority,
-            tags,
-          }),
-        })
+      // Отправляем данные на сервер
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          date: date.toISOString(),
+          priority,
+          tags,
+        }),
+      })
 
-        const data = await response.json()
+      const data = await response.json()
 
-        if (!data.success) {
-          setError(data.message || "Не удалось обновить задачу")
-          showNotification(data.message || "Не удалось обновить задачу", "error")
-          setIsSaving(false)
-          return
-        } else {
-          // Обновляем локальное состояние
-          setEntry({
-            ...entry,
-            title,
-            description,
-            date,
-            priority,
-            tags,
-          })
-          showNotification("Задача успешно обновлена", "success")
-        }
+      if (!data.success) {
+        setError(data.message || "Не удалось обновить задачу")
+        showNotification(data.message || "Не удалось обновить задачу", "error")
+        setIsSaving(false)
+        return
       } else {
-        // Для статических записей просто имитируем сохранение
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
         // Обновляем локальное состояние
-        setEntry({
-          ...entry,
+        setTask({
+          ...task,
           title,
           description,
           date,
           priority,
           tags,
         })
-
         showNotification("Задача успешно обновлена", "success")
       }
 
@@ -415,23 +338,18 @@ export default function EntryPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                if (source === "notes") {
-                  router.push("/notes")
-                } else if (source === "tasks") {
-                  router.push("/tasks")
-                } else {
-                  router.push("/dashboard")
-                }
-              }}
+              onClick={() => router.push(source === "tasks" ? "/tasks" : "/dashboard")}
               className="rounded-full"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
 
-            <Badge variant="outline" className={cn("ml-2", typeColors[entry.type])}>
-              <Icon className="h-3 w-3 mr-1" />
-              {typeLabels[entry.type]}
+            <Badge
+              variant="outline"
+              className="ml-2 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+            >
+              <ListTodo className="h-3 w-3 mr-1" />
+              Задача
             </Badge>
 
             {lastSaved && (
@@ -465,26 +383,24 @@ export default function EntryPage() {
               </Button>
             )}
 
-            {entry.type === "task" && (
-              <Button
-                variant={isCompleted ? "default" : "outline"}
-                size="sm"
-                className="gap-1 text-sm"
-                onClick={toggleComplete}
-              >
-                {isCompleted ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Выполнено
-                  </>
-                ) : (
-                  <>
-                    <Circle className="h-4 w-4" />
-                    Выполнить
-                  </>
-                )}
-              </Button>
-            )}
+            <Button
+              variant={isCompleted ? "default" : "outline"}
+              size="sm"
+              className="gap-1 text-sm"
+              onClick={toggleComplete}
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Выполнено
+                </>
+              ) : (
+                <>
+                  <Circle className="h-4 w-4" />
+                  Выполнить
+                </>
+              )}
+            </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -583,68 +499,55 @@ export default function EntryPage() {
             </Popover>
 
             {/* Приоритет */}
-            {entry.type === "task" && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("gap-2 h-8", priorityColors[priority])}>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("gap-2 h-8", priorityColors[priority])}>
+                  <Flag className="h-3.5 w-3.5" />
+                  {priorityLabels[priority]}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-start gap-2 mb-1", priorityColors.low)}
+                    onClick={() => handlePriorityChange("low")}
+                  >
                     <Flag className="h-3.5 w-3.5" />
-                    {priorityLabels[priority]}
+                    Низкий
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <div className="p-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("w-full justify-start gap-2 mb-1", priorityColors.low)}
-                      onClick={() => handlePriorityChange("low")}
-                    >
-                      <Flag className="h-3.5 w-3.5" />
-                      Низкий
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("w-full justify-start gap-2 mb-1", priorityColors.medium)}
-                      onClick={() => handlePriorityChange("medium")}
-                    >
-                      <Flag className="h-3.5 w-3.5" />
-                      Средний
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("w-full justify-start gap-2", priorityColors.high)}
-                      onClick={() => handlePriorityChange("high")}
-                    >
-                      <Flag className="h-3.5 w-3.5" />
-                      Высокий
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-start gap-2 mb-1", priorityColors.medium)}
+                    onClick={() => handlePriorityChange("medium")}
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                    Средний
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("w-full justify-start gap-2", priorityColors.high)}
+                    onClick={() => handlePriorityChange("high")}
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                    Высокий
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Редактор содержимого */}
+          {/* Описание - используем обычный Textarea для задач */}
           <div className="pt-4 border-t">
-            {entry.type === "note" ? (
-              <RichTextEditor
-                value={description}
-                onChange={handleDescriptionChange}
-                placeholder="Добавьте описание..."
-                className="border-none shadow-none"
-                minHeight="300px"
-              />
-            ) : (
-              <RichTextEditor
-                value={description}
-                onChange={handleDescriptionChange}
-                placeholder="Добавьте описание..."
-                className="border-none shadow-none"
-                minHeight="200px"
-              />
-            )}
+            <Textarea
+              value={description}
+              onChange={handleDescriptionChange}
+              placeholder="Добавьте описание..."
+              className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
+            />
           </div>
 
           {/* Теги */}
@@ -702,7 +605,7 @@ export default function EntryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
             <AlertDialogDescription>
-              Это действие нельзя отменить. Запись будет навсегда удалена из вашей учетной записи.
+              Это действие нельзя отменить. Задача будет навсегда удалена из вашей учетной записи.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
