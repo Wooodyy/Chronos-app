@@ -8,7 +8,6 @@ import { ru } from "date-fns/locale"
 import { ArrowLeft, FileText, Trash2, Loader2, Tag, MoreHorizontal, Plus, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { entries } from "@/data/entries"
 import { useState, useEffect, useRef } from "react"
 import {
   AlertDialog,
@@ -25,11 +24,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { Entry } from "@/types/entry"
 import { RichTextEditor } from "@/components/features/editor/rich-text-editor"
 import { useNotification } from "@/components/ui/notification"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function NotePage() {
   const router = useRouter()
   const params = useParams()
-  const searchParams = useParams()
+  const { user } = useAuth()
   const [source, setSource] = useState("dashboard")
   const [note, setNote] = useState<Entry | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -41,7 +41,6 @@ export default function NotePage() {
   // Состояния для редактируемых полей
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
-  const [date, setDate] = useState<Date | null>(null)
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
 
@@ -54,26 +53,45 @@ export default function NotePage() {
   // Добавляем использование хука в компоненте
   const { showNotification } = useNotification()
 
+  // Проверяем авторизацию
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
   useEffect(() => {
     const fetchNote = async () => {
+      if (!user) return
+
       setIsLoading(true)
 
-      // Ищем заметку в статическом массиве
-      const staticNote = entries.find((e) => e.id === params.id && e.type === "note")
+      try {
+        const response = await fetch(`/api/notes/${params.id}`)
 
-      if (staticNote) {
-        setNote(staticNote)
-        initializeFormFields(staticNote)
+        if (!response.ok) {
+          if (response.status === 404) {
+            router.push("/notes")
+            return
+          }
+          throw new Error("Ошибка при загрузке заметки")
+        }
+
+        const data = await response.json()
+
+        if (!data.success) {
+          throw new Error(data.message || "Заметка не найдена")
+        }
+
+        setNote(data.note)
+        initializeFormFields(data.note)
+      } catch (error) {
+        console.error("Ошибка при загрузке заметки:", error)
+        showNotification("Не удалось загрузить заметку", "error")
+        router.push("/notes")
+      } finally {
         setIsLoading(false)
-        return
       }
-
-      // Если не нашли в статическом массиве, можно добавить запрос к API
-      // для получения заметки из базы данных (если это будет реализовано)
-
-      // Если не нашли заметку, перенаправляем на список заметок
-      router.push("/notes")
-      setIsLoading(false)
     }
 
     fetchNote()
@@ -84,20 +102,13 @@ export default function NotePage() {
     if (sourceParam) {
       setSource(sourceParam)
     }
-  }, [params.id, router])
+  }, [params.id, router, user, showNotification])
 
   // Функция для инициализации полей формы
   const initializeFormFields = (note: Entry) => {
     setTitle(note.title)
     setContent(note.description || "")
-
-    // Устанавливаем дату
-    setDate(new Date(note.date))
-
-    // Устанавливаем теги
     setTags(note.tags || [])
-
-    // Сбрасываем флаг изменений
     setIsEdited(false)
   }
 
@@ -134,6 +145,75 @@ export default function NotePage() {
     }
   }
 
+  // Функция для удаления заметки
+  const handleDelete = async () => {
+    if (!note) return
+
+    try {
+      const response = await fetch(`/api/notes/${note.id}`, {
+        method: "DELETE",
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || "Ошибка при удалении заметки")
+      }
+
+      showNotification("Заметка успешно удалена", "success")
+      router.push(source === "notes" ? "/notes" : "/dashboard")
+    } catch (error) {
+      console.error("Error deleting note:", error)
+      showNotification("Произошла ошибка при удалении заметки", "error")
+    }
+  }
+
+  // Функция для сохранения изменений
+  const handleSave = async () => {
+    if (!note) return
+
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/notes/${note.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          tags,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || "Ошибка при обновлении заметки")
+      }
+
+      // Обновляем локальное состояние
+      setNote({
+        ...note,
+        title,
+        description: content,
+        tags,
+      })
+
+      showNotification("Заметка успешно обновлена", "success")
+      setLastSaved(new Date())
+      setIsEdited(false)
+    } catch (error) {
+      console.error("Error updating note:", error)
+      setError(error instanceof Error ? error.message : "Произошла ошибка при обновлении заметки")
+      showNotification("Произошла ошибка при обновлении заметки", "error")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
@@ -143,65 +223,8 @@ export default function NotePage() {
     )
   }
 
-  if (!note) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-          <FileText className="h-10 w-10 text-muted-foreground" />
-        </div>
-        <h2 className="text-2xl font-bold">Заметка не найдена</h2>
-        <p className="text-muted-foreground text-center max-w-md">
-          Заметка, которую вы ищете, не существует или была удалена.
-        </p>
-        <Button onClick={() => router.push("/notes")} className="mt-4">
-          Вернуться к заметкам
-        </Button>
-      </div>
-    )
-  }
-
-  // Обновляем функцию handleDelete
-  const handleDelete = async () => {
-    // For static notes just redirect
-    console.log("Deleting note:", note.id)
-    showNotification("Заметка успешно удалена", "success")
-    router.push(source === "notes" ? "/notes" : "/dashboard")
-  }
-
-  // Функция для сохранения изменений
-  const handleSave = async () => {
-    if (!note || !date) return
-
-    setIsSaving(true)
-    setError(null)
-
-    try {
-      // Для статических заметок просто имитируем сохранение
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Обновляем локальное состояние
-      setNote({
-        ...note,
-        title,
-        description: content,
-        date,
-        tags,
-      })
-
-      showNotification("Заметка успешно обновлена", "success")
-
-      // Обновляем время последнего сохранения
-      setLastSaved(new Date())
-
-      // Сбрасываем флаг изменений
-      setIsEdited(false)
-    } catch (error) {
-      console.error("Error updating note:", error)
-      setError("Произошла ошибка при обновлении заметки")
-      showNotification("Произошла ошибка при обновлении заметки", "error")
-    } finally {
-      setIsSaving(false)
-    }
+  if (!note || !user) {
+    return null
   }
 
   return (
@@ -224,9 +247,9 @@ export default function NotePage() {
 
             <Badge
               variant="outline"
-              className="ml-2 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+              className="ml-2 h-9 px-4 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center"
             >
-              <FileText className="h-3 w-3 mr-1" />
+              <FileText className="h-4 w-4 mr-2" />
               Заметка
             </Badge>
 
@@ -246,7 +269,7 @@ export default function NotePage() {
 
           <div className="flex items-center gap-2">
             {isEdited && (
-              <Button variant="default" size="sm" className="gap-1 text-sm" onClick={handleSave} disabled={isSaving}>
+              <Button variant="default" size="sm" className="h-9 px-4 gap-1" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />

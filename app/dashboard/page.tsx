@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react"
 import { CalendarView } from "@/components/features/calendar/calendar-view"
 import { EntriesList } from "@/components/features/entries/entries-list"
 import { AddEntryButton } from "@/components/features/entries/add-entry-button"
-import { SearchButton } from "@/components/shared/search-button"
 import { entries as staticEntries } from "@/data/entries"
 import { isSameDay } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,9 +14,9 @@ import type { Entry } from "@/types/entry"
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [searchQuery, setSearchQuery] = useState("")
   const [isCompact, setIsCompact] = useState(false)
   const [dbTasks, setDbTasks] = useState<Entry[]>([])
+  const [dbNotes, setDbNotes] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const { user } = useAuth()
   const dataFetchedRef = useRef(false)
@@ -33,10 +32,10 @@ export default function DashboardPage() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Эффект для загрузки задач пользователя
+  // Эффект для загрузки задач и заметок пользователя
   useEffect(() => {
-    // Функция для загрузки задач
-    const fetchTasks = async () => {
+    // Функция для загрузки данных
+    const fetchData = async () => {
       if (!user?.login) return
 
       // Сбрасываем флаг при изменении пользователя
@@ -48,8 +47,9 @@ export default function DashboardPage() {
 
       setIsLoading(true)
       try {
+        // Загружаем задачи
         const timestamp = new Date().getTime()
-        const response = await fetch(`/api/tasks/user/${user.login}?t=${timestamp}`, {
+        const tasksResponse = await fetch(`/api/tasks/user/${user.login}?t=${timestamp}`, {
           cache: "no-store",
           headers: {
             "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -58,37 +58,46 @@ export default function DashboardPage() {
           },
         })
 
-        const data = await response.json()
+        const tasksData = await tasksResponse.json()
 
-        if (data.success && data.tasks) {
-          setDbTasks(data.tasks)
+        if (tasksData.success && tasksData.tasks) {
+          setDbTasks(tasksData.tasks)
+        }
+
+        // Загружаем заметки
+        const notesResponse = await fetch(`/api/notes/user/${user.login}?t=${timestamp}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        })
+
+        const notesData = await notesResponse.json()
+
+        if (notesData.success && notesData.notes) {
+          setDbNotes(notesData.notes)
         }
       } catch (error) {
-        console.error("Error fetching user tasks:", error)
+        console.error("Error fetching user data:", error)
       } finally {
         setIsLoading(false)
         dataFetchedRef.current = true
       }
     }
 
-    fetchTasks()
+    fetchData()
   }, [user?.login])
 
-  // Получаем напоминания и заметки из статических данных
-  const staticRemindersAndNotes = staticEntries.filter((entry) => entry.type === "reminder" || entry.type === "note")
+  // Получаем напоминания из статических данных
+  const staticReminders = staticEntries.filter((entry) => entry.type === "reminder")
 
   // Объединяем все записи
-  const allEntries = [...staticRemindersAndNotes, ...dbTasks]
+  const allEntries = [...staticReminders, ...dbTasks, ...dbNotes]
 
-  // Фильтруем записи по выбранной дате и поисковому запросу
-  const dayEntries = allEntries
-    .filter((entry) => isSameDay(entry.date, selectedDate))
-    .filter(
-      (entry) =>
-        searchQuery === "" ||
-        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+  // Фильтруем записи по выбранной дате
+  const dayEntries = allEntries.filter((entry) => isSameDay(entry.date, selectedDate))
 
   const tasks = dayEntries.filter((entry) => entry.type === "task")
   const reminders = dayEntries.filter((entry) => entry.type === "reminder")
@@ -105,14 +114,17 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mt-1">Добро пожаловать, {user?.name || "Пользователь"}</p>
           </div>
           <div className="flex items-center gap-4">
-            <SearchButton onSearch={setSearchQuery} />
             <AddEntryButton />
           </div>
         </div>
 
         <Card className="overflow-hidden border-none shadow-md">
           <CardContent className="p-0">
-            <CalendarView selectedDate={selectedDate} onDateSelect={setSelectedDate} dbTasks={dbTasks} />
+            <CalendarView
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              dbTasks={[...dbTasks, ...dbNotes]}
+            />
           </CardContent>
         </Card>
 

@@ -165,9 +165,9 @@ export default function NewTaskPage() {
 
             <Badge
               variant="outline"
-              className="ml-2 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+              className="ml-2 h-9 px-4 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center"
             >
-              <ListTodo className="h-3 w-3 mr-1" />
+              <ListTodo className="h-4 w-4 mr-2" />
               Новая задача
             </Badge>
           </div>
@@ -176,7 +176,7 @@ export default function NewTaskPage() {
             <Button
               variant="default"
               size="sm"
-              className="gap-1 text-sm"
+              className="h-9 px-4 gap-1"
               onClick={handleSubmit}
               disabled={isSaving || !title.trim()}
             >

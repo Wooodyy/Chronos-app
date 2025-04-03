@@ -346,9 +346,9 @@ export default function TaskPage() {
 
             <Badge
               variant="outline"
-              className="ml-2 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+              className="ml-2 h-9 px-4 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center"
             >
-              <ListTodo className="h-3 w-3 mr-1" />
+              <ListTodo className="h-4 w-4 mr-2" />
               Задача
             </Badge>
 
@@ -368,7 +368,7 @@ export default function TaskPage() {
 
           <div className="flex items-center gap-2">
             {isEdited && (
-              <Button variant="default" size="sm" className="gap-1 text-sm" onClick={handleSave} disabled={isSaving}>
+              <Button variant="default" size="sm" className="h-9 px-4 gap-1" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -386,7 +386,7 @@ export default function TaskPage() {
             <Button
               variant={isCompleted ? "default" : "outline"}
               size="sm"
-              className="gap-1 text-sm"
+              className="h-9 px-4 gap-1"
               onClick={toggleComplete}
             >
               {isCompleted ? (

@@ -4,18 +4,19 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Calendar, Save, Tag, Plus } from "lucide-react"
+import { ArrowLeft, Calendar, Save, Tag, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 import { useNotification } from "@/components/ui/notification"
 import { RichTextEditor } from "@/components/features/editor/rich-text-editor"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function NewNotePage() {
   const router = useRouter()
+  const { user } = useAuth()
   const { showNotification } = useNotification()
 
   // Refs для элементов редактирования
@@ -27,6 +28,13 @@ export default function NewNotePage() {
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+
+  // Проверяем авторизацию
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
 
   // Фокус на заголовке при загрузке
   useEffect(() => {
@@ -71,30 +79,37 @@ export default function NewNotePage() {
       return
     }
 
+    if (!user) {
+      showNotification("Необходимо авторизоваться", "error")
+      router.push("/login")
+      return
+    }
+
     setIsSaving(true)
 
     try {
-      // В реальном приложении здесь был бы API-запрос для создания заметки
-      // await fetch("/api/notes", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     title,
-      //     description: content,
-      //     tags,
-      //     type: "note",
-      //     date: new Date().toISOString(),
-      //   }),
-      // })
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: user.login,
+          title,
+          content,
+          tags,
+        }),
+      })
 
-      // Имитация задержки сохранения
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || "Ошибка при создании заметки")
+      }
 
       showNotification("Заметка успешно создана", "success")
       router.push("/notes")
     } catch (error) {
       console.error("Error creating note:", error)
-      showNotification("Произошла ошибка при создании заметки", "error")
+      showNotification(error instanceof Error ? error.message : "Произошла ошибка при создании заметки", "error")
     } finally {
       setIsSaving(false)
     }
@@ -102,6 +117,10 @@ export default function NewNotePage() {
 
   const typeColors = {
     note: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
@@ -117,8 +136,11 @@ export default function NewNotePage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
 
-            <Badge variant="outline" className={cn("ml-2", typeColors.note)}>
-              <Calendar className="h-3 w-3 mr-1" />
+            <Badge
+              variant="outline"
+              className="ml-2 h-9 px-4 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
               Заметка
             </Badge>
 
@@ -131,12 +153,21 @@ export default function NewNotePage() {
             <Button
               variant="default"
               size="sm"
-              className="gap-1 text-sm"
+              className="h-9 px-4 gap-1"
               onClick={handleSave}
               disabled={isSaving || !title.trim()}
             >
-              <Save className="h-4 w-4" />
-              {isSaving ? "Сохранение..." : "Сохранить"}
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Сохранить
+                </>
+              )}
             </Button>
           </div>
         </div>

@@ -21,6 +21,12 @@ import { motion } from "framer-motion"
 import { DotLottieReact } from "@lottiefiles/dotlottie-react"
 import { useNotification } from "@/components/ui/notification"
 
+// Add a helper function to strip HTML tags from text at the top of the file, after the imports
+function stripHtmlTags(html: string): string {
+  if (!html) return ""
+  return html.replace(/<\/?[^>]+(>|$)/g, " ")
+}
+
 const typeIcons = {
   task: ListTodo,
   reminder: Bell,
@@ -255,31 +261,33 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                   isCompleted && entry.type === "task" ? "line-through" : "",
                 )}
               >
-                {entry.description}
+                {entry.type === "note" ? stripHtmlTags(entry.description) : entry.description}
               </p>
             </div>
 
             {/* Footer with metadata */}
             <div className="flex flex-wrap gap-2 mt-auto">
-              {/* Time remaining - styled like tags */}
-              <div
-                className={cn(
-                  "text-xs py-0 h-5 rounded-full px-2",
-                  isPastDue ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "bg-secondary/30",
-                )}
-              >
-                {isPastDue ? (
-                  <span className="flex items-center justify-center h-full gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {timeRemaining}
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center h-full gap-1">
-                    <Clock className="h-3 w-3" />
-                    {timeRemaining}
-                  </span>
-                )}
-              </div>
+              {/* Time remaining - styled like tags, only shown for tasks and reminders */}
+              {entry.type !== "note" && (
+                <div
+                  className={cn(
+                    "text-xs py-0 h-5 rounded-full px-2",
+                    isPastDue ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "bg-secondary/30",
+                  )}
+                >
+                  {isPastDue ? (
+                    <span className="flex items-center justify-center h-full gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {timeRemaining}
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center h-full gap-1">
+                      <Clock className="h-3 w-3" />
+                      {timeRemaining}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Priority - styled like tags */}
               {entry.priority && (

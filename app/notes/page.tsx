@@ -1,26 +1,71 @@
 "use client"
 
-import { useState } from "react"
-import { FileText, Plus } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { FileText, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EntriesList } from "@/components/features/entries/entries-list"
-import { SearchButton } from "@/components/shared/search-button"
-import { entries } from "@/data/entries"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { useNotification } from "@/components/ui/notification"
+import type { Entry } from "@/types/entry"
 
 export default function NotesPage() {
   const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
+  const { user } = useAuth()
+  const { showNotification } = useNotification()
+  const [notes, setNotes] = useState<Entry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const dataFetchedRef = useRef(false)
 
-  // Фильтруем только заметки
-  const notes = entries
-    .filter((entry) => entry.type === "note")
-    .filter(
-      (entry) =>
-        searchQuery === "" ||
-        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+  // Загружаем заметки из базы данных
+  useEffect(() => {
+    // Функция для загрузки заметок
+    const fetchNotes = async () => {
+      if (!user?.login) return
+
+      // Сбрасываем флаг при изменении пользователя
+      if (dataFetchedRef.current && user.login) {
+        dataFetchedRef.current = false
+      }
+
+      if (dataFetchedRef.current) return
+
+      setIsLoading(true)
+      try {
+        const timestamp = new Date().getTime()
+        const response = await fetch(`/api/notes/user/${user.login}?t=${timestamp}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        })
+
+        const data = await response.json()
+
+        if (data.success && data.notes) {
+          setNotes(data.notes)
+        }
+      } catch (error) {
+        console.error("Error fetching user notes:", error)
+        showNotification("Не удалось загрузить заметки", "error")
+      } finally {
+        setIsLoading(false)
+        dataFetchedRef.current = true
+      }
+    }
+
+    fetchNotes()
+  }, [user?.login, showNotification])
+
+  // No need to filter notes by search query anymore
+  const filteredNotes = notes
+
+  if (!user) {
+    router.push("/login")
+    return null
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -39,7 +84,6 @@ export default function NotesPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <SearchButton onSearch={setSearchQuery} />
             <Button onClick={() => router.push("/new/note")} className="gap-2 hidden md:flex">
               <Plus className="h-4 w-4" />
               Создать заметку
@@ -47,7 +91,13 @@ export default function NotesPage() {
           </div>
         </div>
 
-        <EntriesList entries={notes} showDate={true} />
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <EntriesList entries={filteredNotes} showDate={true} />
+        )}
       </div>
 
       {/* Mobile padding for bottom navigation */}

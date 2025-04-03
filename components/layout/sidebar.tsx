@@ -47,6 +47,12 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { user, logout } = useAuth()
 
+  // Добавьте этот код в начало компонента Sidebar, после объявления констант
+  useEffect(() => {
+    // Этот эффект будет срабатывать при изменении данных пользователя
+    // Компонент будет перерисовываться с актуальными данными
+  }, [user])
+
   const handleVoiceInput = () => {
     setIsRecording(!isRecording)
   }
@@ -178,7 +184,7 @@ export function Sidebar() {
               <Link href="/profile">
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                   <Avatar className="cursor-pointer">
-                    <AvatarImage src={user?.avatar} />
+                    <AvatarImage src={user?.avatar ?? undefined} />
                     <AvatarFallback>{user?.name?.substring(0, 2) || "U"}</AvatarFallback>
                   </Avatar>
                 </motion.div>
@@ -213,7 +219,7 @@ export function Sidebar() {
           <Link href="/profile">
             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
               <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage src={user?.avatar ?? undefined} />
                 <AvatarFallback>{user?.name?.substring(0, 2) || "U"}</AvatarFallback>
               </Avatar>
             </motion.div>

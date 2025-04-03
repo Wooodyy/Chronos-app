@@ -387,7 +387,8 @@ export async function updateTask(
            description = COALESCE($2, description),
            date = COALESCE($3, date),
            priority = COALESCE($4, priority),
-           tags = COALESCE($5, tags)
+           tags = COALESCE($5, tags),
+           updated_at = NOW()
        WHERE id = $6
        RETURNING id`,
       [title, description, date, priority, tags, id],
@@ -396,6 +397,153 @@ export async function updateTask(
     return result.rowCount !== null && result.rowCount > 0
   } catch (error) {
     console.error("Ошибка обновления задачи:", error)
+    return false
+  }
+}
+
+// Функция для создания новой заметки
+export async function createNote(noteData: {
+  login: string
+  title: string
+  content: string
+  tags?: string[]
+}): Promise<{ success: boolean; note?: Entry; message?: string }> {
+  try {
+    const { login, title, content, tags } = noteData
+
+    // Проверяем, существует ли пользователь с таким логином
+    const userCheck = await pool.query("SELECT id FROM users WHERE login = $1", [login])
+    if (userCheck.rows.length === 0) {
+      return { success: false, message: "Пользователь не найден" }
+    }
+
+    // Вставляем новую заметку
+    const result = await pool.query(
+      `INSERT INTO notes 
+      (login, title, content, tags, created_at, updated_at) 
+      VALUES ($1, $2, $3, $4, NOW(), NOW()) 
+      RETURNING id, login, title, content, tags, created_at`,
+      [login, title, content, tags || []],
+    )
+
+    if (result.rows.length === 0) {
+      return { success: false, message: "Ошибка при создании заметки" }
+    }
+
+    const note = result.rows[0]
+
+    // Преобразуем данные в формат Entry
+    const newNote: Entry = {
+      id: note.id.toString(),
+      title: note.title,
+      description: note.content,
+      date: new Date(note.created_at),
+      type: "note",
+      tags: note.tags,
+    }
+
+    return { success: true, note: newNote }
+  } catch (error) {
+    console.error("Ошибка создания заметки:", error)
+    return { success: false, message: "Ошибка при создании заметки" }
+  }
+}
+
+// Функция для получения всех заметок пользователя
+export async function getUserNotes(login: string): Promise<Entry[]> {
+  try {
+    const result = await pool.query(
+      `SELECT id, login, title, content, tags, created_at, updated_at
+       FROM notes 
+       WHERE login = $1 
+       ORDER BY updated_at DESC`,
+      [login],
+    )
+
+    // Преобразуем данные в формат Entry
+    return result.rows.map((note) => ({
+      id: note.id.toString(),
+      title: note.title,
+      description: note.content,
+      date: new Date(note.created_at),
+      type: "note",
+      tags: note.tags,
+    }))
+  } catch (error) {
+    console.error("Ошибка получения заметок:", error)
+    return []
+  }
+}
+
+// Функция для получения заметки по ID
+export async function getNoteById(id: string): Promise<Entry | null> {
+  try {
+    const result = await pool.query(
+      `SELECT id, login, title, content, tags, created_at, updated_at
+       FROM notes 
+       WHERE id = $1`,
+      [id],
+    )
+
+    if (result.rows.length === 0) {
+      return null
+    }
+
+    const note = result.rows[0]
+
+    // Преобразуем данные в формат Entry
+    return {
+      id: note.id.toString(),
+      title: note.title,
+      description: note.content,
+      date: new Date(note.created_at),
+      type: "note",
+      tags: note.tags,
+    }
+  } catch (error) {
+    console.error("Ошибка получения заметки по ID:", error)
+    return null
+  }
+}
+
+// Функция для удаления заметки
+export async function deleteNote(id: string): Promise<boolean> {
+  try {
+    const result = await pool.query("DELETE FROM notes WHERE id = $1 RETURNING id", [id])
+
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка удаления заметки:", error)
+    return false
+  }
+}
+
+// Функция для обновления заметки
+export async function updateNote(
+  id: string,
+  noteData: {
+    title?: string
+    content?: string
+    tags?: string[]
+  },
+): Promise<boolean> {
+  try {
+    const { title, content, tags } = noteData
+
+    const result = await pool.query(
+      `UPDATE notes 
+       SET title = COALESCE($1, title),
+           content = COALESCE($2, content),
+           tags = COALESCE($3, tags),
+           updated_at = NOW()
+       WHERE id = $4
+       RETURNING id`,
+      [title, content, tags, id],
+    )
+
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка обновления заметки:", error)
     return false
   }
 }

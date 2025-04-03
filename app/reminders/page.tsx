@@ -1,26 +1,15 @@
 "use client"
-
-import { useState } from "react"
 import { Bell, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EntriesList } from "@/components/features/entries/entries-list"
-import { SearchButton } from "@/components/shared/search-button"
 import { entries } from "@/data/entries"
 import { useRouter } from "next/navigation"
 
 export default function RemindersPage() {
   const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
 
   // Фильтруем только напоминания
-  const reminders = entries
-    .filter((entry) => entry.type === "reminder")
-    .filter(
-      (entry) =>
-        searchQuery === "" ||
-        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+  const reminders = entries.filter((entry) => entry.type === "reminder")
 
   return (
     <div className="flex flex-col min-h-full">
@@ -39,7 +28,6 @@ export default function RemindersPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <SearchButton onSearch={setSearchQuery} />
             <Button onClick={() => router.push("/new/reminder")} className="gap-2 hidden md:flex">
               <Plus className="h-4 w-4" />
               Создать напоминание

@@ -25,18 +25,14 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Проверяем, была ли страница перезагружена
     const handlePageLoad = async () => {
-      // Если это первый рендер и пользователь авторизован, обновляем данные
-      if (isFirstRenderRef.current && user && !isPublicRoute) {
-        isFirstRenderRef.current = false
-
+      // Если пользователь авторизован, обновляем данные при каждой загрузке страницы
+      if (user && !isPublicRoute) {
         // Устанавливаем флаг в sessionStorage, чтобы определить перезагрузку страницы
         const wasReloaded = sessionStorage.getItem("page_reloaded") === "true"
         sessionStorage.removeItem("page_reloaded")
 
-        if (wasReloaded) {
-          // Если страница была перезагружена, обновляем данные
-          await refreshData()
-        }
+        // Всегда обновляем данные при загрузке страницы
+        await refreshData()
       }
     }
 
