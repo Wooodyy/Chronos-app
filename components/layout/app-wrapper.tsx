@@ -18,21 +18,30 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const prevPathRef = useRef<string | null>(null)
-  const isFirstRenderRef = useRef(true)
   const isPublicRoute = publicRoutes.includes(pathname)
+  const pageReloadHandledRef = useRef(false)
 
-  // Обработчик изменения маршрута и перезагрузки страницы
+  // Обработчик перезагрузки страницы
   useEffect(() => {
     // Проверяем, была ли страница перезагружена
     const handlePageLoad = async () => {
-      // Если пользователь авторизован, обновляем данные при каждой загрузке страницы
+      if (pageReloadHandledRef.current) return
+
+      // Если пользователь авторизован и это не публичный маршрут
       if (user && !isPublicRoute) {
         // Устанавливаем флаг в sessionStorage, чтобы определить перезагрузку страницы
         const wasReloaded = sessionStorage.getItem("page_reloaded") === "true"
         sessionStorage.removeItem("page_reloaded")
 
-        // Всегда обновляем данные при загрузке страницы
-        await refreshData()
+        if (wasReloaded) {
+          // Если страница была перезагружена, обновляем данные
+          pageReloadHandledRef.current = true
+          // Используем setTimeout, чтобы избежать циклических обновлений
+          setTimeout(() => {
+            refreshData()
+            pageReloadHandledRef.current = false
+          }, 500)
+        }
       }
     }
 
@@ -52,14 +61,14 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
 
   // Обработчик изменения маршрута
   useEffect(() => {
-    // Если маршрут изменился и это не первый рендер, обновляем данные
+    // Если маршрут изменился и пользователь авторизован и это не публичный маршрут
     if (prevPathRef.current !== null && prevPathRef.current !== pathname && user && !isPublicRoute) {
-      refreshData()
+      // Не обновляем данные здесь, так как это будет сделано в компонентах страниц
     }
 
     // Сохраняем текущий маршрут для следующего сравнения
     prevPathRef.current = pathname
-  }, [pathname, user, isPublicRoute, refreshData])
+  }, [pathname, user, isPublicRoute])
 
   // Перенаправляем неаутентифицированных пользователей на страницу входа
   useEffect(() => {

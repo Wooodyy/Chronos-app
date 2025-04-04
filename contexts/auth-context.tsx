@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const isUpdatingRef = useRef(false)
+  const initialLoadDoneRef = useRef(false)
 
   // Функция для обновления данных пользователя из API
   const updateUserData = useCallback(async () => {
@@ -74,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       isUpdatingRef.current = true
       await updateUserData()
-      // Здесь не перезагружаем страницу, так как это будет делаться в компонентах
     } catch (error) {
       console.error("Error refreshing data:", error)
     } finally {
@@ -85,42 +85,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Проверяем, есть ли сохраненный пользователь в localStorage
     const loadUser = async () => {
+      if (initialLoadDoneRef.current) return
+
       try {
         const storedUser = localStorage.getItem("chronos_user")
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser)
-
-          // Временно устанавливаем пользователя из localStorage
           setUser(parsedUser)
 
-          // Сразу запрашиваем актуальные данные из API
-          if (parsedUser.id && !isUpdatingRef.current) {
-            try {
-              isUpdatingRef.current = true
-              // Добавляем параметр для предотвращения кэширования
-              const timestamp = new Date().getTime()
-              const response = await fetch(`/api/users/${parsedUser.id}?t=${timestamp}`)
-              const data = await response.json()
+          // Проверяем, была ли страница перезагружена
+          const wasReloaded = sessionStorage.getItem("page_reloaded") === "true"
+          sessionStorage.removeItem("page_reloaded")
 
-              if (data.success && data.user) {
-                const freshUser = {
-                  ...parsedUser,
-                  ...data.user,
-                  name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim(),
+          // Обновляем данные только при перезагрузке страницы
+          if (wasReloaded && parsedUser.id && !isUpdatingRef.current) {
+            // Используем setTimeout, чтобы избежать циклических обновлений
+            setTimeout(async () => {
+              try {
+                isUpdatingRef.current = true
+                const timestamp = new Date().getTime()
+                const response = await fetch(`/api/users/${parsedUser.id}?t=${timestamp}`)
+                const data = await response.json()
+
+                if (data.success && data.user) {
+                  const freshUser = {
+                    ...parsedUser,
+                    ...data.user,
+                    name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim(),
+                  }
+                  setUser(freshUser)
+                  localStorage.setItem("chronos_user", JSON.stringify(freshUser))
+                } else {
+                  localStorage.removeItem("chronos_user")
+                  setUser(null)
                 }
-                setUser(freshUser)
-                localStorage.setItem("chronos_user", JSON.stringify(freshUser))
-              } else {
-                // Если пользователь не найден в базе, очищаем localStorage
-                localStorage.removeItem("chronos_user")
-                setUser(null)
+              } catch (error) {
+                console.error("Error fetching user data:", error)
+              } finally {
+                isUpdatingRef.current = false
               }
-            } catch (error) {
-              console.error("Error fetching user data:", error)
-              // Оставляем данные из localStorage, если API недоступно
-            } finally {
-              isUpdatingRef.current = false
-            }
+            }, 100)
           }
         }
       } catch (error) {
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
       } finally {
         setIsLoading(false)
+        initialLoadDoneRef.current = true
       }
     }
 
@@ -137,6 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadUser()
     } else {
       setIsLoading(false)
+    }
+
+    // Устанавливаем обработчик события beforeunload для определения перезагрузки страницы
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("page_reloaded", "true")
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
     }
   }, [])
 

@@ -18,8 +18,9 @@ export default function DashboardPage() {
   const [dbTasks, setDbTasks] = useState<Entry[]>([])
   const [dbNotes, setDbNotes] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { user } = useAuth()
+  const { user, refreshData } = useAuth()
   const dataFetchedRef = useRef(false)
+  const userDataRefreshedRef = useRef(false)
 
   // Эффект для обработки изменения размера экрана
   useEffect(() => {
@@ -89,6 +90,20 @@ export default function DashboardPage() {
 
     fetchData()
   }, [user?.login])
+
+  // Обновляем данные пользователя при первом рендере страницы
+  useEffect(() => {
+    if (user && !userDataRefreshedRef.current) {
+      userDataRefreshedRef.current = true
+
+      // Используем setTimeout, чтобы избежать циклических обновлений
+      const timer = setTimeout(() => {
+        refreshData()
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [user, refreshData])
 
   // Получаем напоминания из статических данных
   const staticReminders = staticEntries.filter((entry) => entry.type === "reminder")

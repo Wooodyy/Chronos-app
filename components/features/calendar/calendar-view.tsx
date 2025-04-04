@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ru } from "date-fns/locale"
@@ -17,10 +17,9 @@ import {
   addMonths,
   isToday,
 } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { entries as staticEntries } from "@/data/entries"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Entry } from "@/types/entry"
 
@@ -59,7 +58,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     // Обновляем высоту после рендеринга
     updateHeight()
 
-    // Добавляем слушатель изменения размера окна
+    // Добавляем слушатль изменения размера окна
     window.addEventListener("resize", updateHeight)
 
     // Очищаем слушатель при размонтировании
@@ -254,7 +253,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? "100%" : "-100%",
-      opacity: 0,
+      opacity: 1,
     }),
     center: {
       x: 0,
@@ -262,7 +261,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     },
     exit: (direction: number) => ({
       x: direction < 0 ? "100%" : "-100%",
-      opacity: 0,
+      opacity: 1,
     }),
   }
 
@@ -278,7 +277,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
 
   // Получаем цвет для типа события
   const getEventTypeColor = (type: Entry["type"], isSelected: boolean) => {
-    if (isSelected) return "bg-primary-foreground"
+    if (isSelected) return "bg-white/90"
 
     switch (type) {
       case "task":
@@ -309,20 +308,24 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
               const isCurrentDay = isToday(date)
               const isCurrentMonth = isSameMonth(date, currentDate)
               const dayNumber = format(date, "d")
+              const events = getEventsForDay(date)
+              const hasEvents = events.length > 0
 
               return (
                 <motion.button
                   key={date.toString()}
                   onClick={() => onDateSelect(date)}
                   className={cn(
-                    "flex flex-col items-center justify-start rounded-xl p-2 sm:p-3 text-center transition-all relative",
+                    "flex flex-col items-center justify-start rounded-xl p-2 sm:p-3 text-center transition-all relative overflow-hidden group",
                     isSelected
-                      ? "bg-primary text-primary-foreground shadow-lg"
+                      ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(139,92,246,0.3)]"
                       : isCurrentDay
-                        ? "bg-accent/50 shadow"
+                        ? "bg-primary/5 shadow-sm border border-primary/10"
                         : !isCurrentMonth
                           ? "text-muted-foreground/50"
-                          : "hover:bg-accent/30",
+                          : hasEvents
+                            ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
+                            : "hover:bg-accent/30",
                   )}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
@@ -330,6 +333,19 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                   animate={isSelected ? { scale: 1.05 } : { scale: 1 }}
                   transition={{ duration: 0.2 }}
                 >
+                  {isSelected && (
+                    <motion.div
+                      className="absolute inset-0 bg-primary/10 z-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  )}
+
+                  {hasEvents && !isSelected && (
+                    <motion.div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0" />
+                  )}
+
                   <span
                     className={cn(
                       "text-sm sm:text-base relative z-10 mb-1",
@@ -340,14 +356,18 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                   </span>
 
                   {eventTypes.length > 0 && (
-                    <div className="flex justify-center gap-1 mt-auto">
+                    <div className="flex justify-center gap-1 mt-auto z-10">
                       {eventTypes.map((type, idx) => (
                         <motion.span
                           key={idx}
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ delay: idx * 0.1 }}
-                          className={cn("h-1.5 w-1.5 rounded-full", getEventTypeColor(type, isSelected))}
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full shadow-[0_0_3px_rgba(0,0,0,0.1)]",
+                            getEventTypeColor(type, isSelected),
+                            isSelected && "shadow-[0_0_5px_rgba(255,255,255,0.5)]",
+                          )}
                         />
                       ))}
                     </div>
@@ -369,20 +389,24 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                 const isCurrentDay = isToday(date)
                 const isCurrentMonth = isSameMonth(date, currentDate)
                 const dayNumber = format(date, "d")
+                const events = getEventsForDay(date)
+                const hasEvents = events.length > 0
 
                 return (
                   <div key={date.toString()} className="p-0.5">
                     <motion.button
                       onClick={() => onDateSelect(date)}
                       className={cn(
-                        "w-full h-8 sm:h-9 flex flex-col items-center justify-center rounded-md text-center transition-all relative",
+                        "w-full h-8 sm:h-9 flex flex-col items-center justify-center rounded-md text-center transition-all relative overflow-hidden group",
                         isSelected
-                          ? "bg-primary text-primary-foreground shadow-lg"
+                          ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(139,92,246,0.3)]"
                           : isCurrentDay
-                            ? "bg-accent/50 shadow"
+                            ? "bg-primary/5 shadow-sm border border-primary/10"
                             : !isCurrentMonth
                               ? "text-muted-foreground/40"
-                              : "hover:bg-accent/30",
+                              : hasEvents
+                                ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
+                                : "hover:bg-accent/30",
                       )}
                       whileHover={{ scale: 1.05, y: -1 }}
                       whileTap={{ scale: 0.95 }}
@@ -390,6 +414,19 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                       animate={isSelected ? { scale: 1.05 } : { scale: 1 }}
                       transition={{ duration: 0.2 }}
                     >
+                      {isSelected && (
+                        <motion.div
+                          className="absolute inset-0 bg-primary/10 z-0"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      )}
+
+                      {hasEvents && !isSelected && (
+                        <motion.div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0" />
+                      )}
+
                       <span
                         className={cn(
                           "text-xs sm:text-sm relative z-10",
@@ -400,14 +437,18 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                       </span>
 
                       {eventTypes.length > 0 && (
-                        <div className="absolute bottom-0.5 flex justify-center gap-0.5">
+                        <div className="absolute bottom-0.5 flex justify-center gap-0.5 z-10">
                           {eventTypes.map((type, idx) => (
                             <motion.span
                               key={idx}
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ delay: idx * 0.1 }}
-                              className={cn("h-1 w-1 rounded-full", getEventTypeColor(type, isSelected))}
+                              className={cn(
+                                "h-1 w-1 rounded-full shadow-[0_0_3px_rgba(0,0,0,0.1)]",
+                                getEventTypeColor(type, isSelected),
+                                isSelected && "shadow-[0_0_5px_rgba(255,255,255,0.5)]",
+                              )}
                             />
                           ))}
                         </div>
@@ -424,36 +465,59 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
   }, [view, days, currentDate, selectedDate, dbTasks])
 
   return (
-    <div className="w-full overflow-hidden rounded-xl bg-card shadow-inner" ref={calendarRef} onWheel={handleWheel}>
+    <div
+      className="w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-900 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-slate-200/50 dark:border-slate-800/50"
+      ref={calendarRef}
+      onWheel={handleWheel}
+    >
       {/* Заголовок календаря */}
-      <div className="flex flex-col gap-3 p-3 sm:p-4 md:p-6 border-b border-border/30 bg-accent-foreground/30">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 p-4 sm:p-5 md:p-6 border-b border-slate-200/70 dark:border-slate-800/70 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent relative overflow-hidden">
+        {/* Декоративные элементы */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl opacity-30 -translate-y-20 translate-x-20"></div>
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl opacity-20 translate-y-20 -translate-x-20"></div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
+          <div className="flex items-center gap-3">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.2)] border border-slate-200/50 dark:border-slate-700/50"
             >
               <CalendarIcon className="h-5 w-5 text-primary" />
             </motion.div>
-            <motion.h2
-              key={capitalizedMonthYear}
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="text-lg sm:text-xl font-medium whitespace-nowrap"
-            >
-              {capitalizedMonthYear}
-            </motion.h2>
+            <div className="flex flex-col">
+              <motion.h2
+                key={capitalizedMonthYear}
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-xl sm:text-2xl font-medium whitespace-nowrap tracking-tight"
+              >
+                {capitalizedMonthYear}
+              </motion.h2>
+              <p className="text-xs text-muted-foreground/80 font-medium">
+                {view === "week" ? "Недельный просмотр" : "Месячный просмотр"}
+              </p>
+            </div>
 
             {/* Показываем кнопки навигации только на десктопе */}
             {!isMobile && (
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={handlePrevious} className="h-8 w-8 rounded-full">
+              <div className="flex gap-1 ml-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePrevious}
+                  className="h-8 w-8 rounded-full hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-primary shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleNext} className="h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNext}
+                  className="h-8 w-8 rounded-full hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-primary shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -462,45 +526,62 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
 
           {/* Переработанные кнопки управления */}
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg overflow-hidden shadow-sm">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleToday}
-                className={cn(
-                  "h-9 px-3 rounded-none border-r border-border/30 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground",
-                )}
-              >
-                <p className={cn("hover:text-primary ")}>Сегодня</p>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleViewChange("week")}
-                className={cn(
-                  "h-9 px-3 rounded-none border-r border-border/30 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground",
-                )}
-              >
-                <p className={cn("hover:text-primary ", view === "week" && "text-primary")}>Неделя</p>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleViewChange("month")}
-                className={cn(
-                  "h-9 px-3 rounded-none border-r border-border/30 bg-background/80 text-foreground hover:bg-background/80 hover:text-foreground",
-                )}
-              >
-                <p className={cn("hover:text-primary ", view === "month" && "text-primary")}>Месяц</p>
-              </Button>
+            {/* Кнопка "Сегодня" */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToday}
+              className="h-9 px-4 rounded-lg bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary transition-all duration-200 shadow-sm border border-slate-200/50 dark:border-slate-700/50 font-medium"
+            >
+              Сегодня
+            </Button>
+
+            {/* Переключатель режимов просмотра */}
+            <div className="relative h-9 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 overflow-hidden">
+              {/* Движущийся индикатор активного режима */}
+              <motion.div
+                className="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-800 shadow-sm z-0"
+                initial={false}
+                animate={{
+                  x: view === "week" ? 0 : "100%",
+                  width: "calc(50% - 4px)",
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+
+              {/* Кнопки переключения */}
+              <div className="relative z-10 flex">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleViewChange("week")}
+                  className={cn(
+                    "h-7 px-4 rounded-md transition-colors duration-200 border-none shadow-none",
+                    view === "week" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Неделя
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleViewChange("month")}
+                  className={cn(
+                    "h-7 px-4 rounded-md transition-colors duration-200 border-none shadow-none",
+                    view === "month" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Месяц
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Дни недели */}
-        <div className="grid grid-cols-7 gap-2 text-center">
+        <div className="grid grid-cols-7 gap-2 text-center mt-4 relative z-10 bg-white/40 dark:bg-zinc-800/40 backdrop-blur-sm rounded-lg py-2 shadow-sm border border-slate-200/50 dark:border-slate-700/50">
           {dayNames.map((day, index) => (
-            <div key={index} className="text-xs font-semibold text-muted-foreground">
+            <div key={index} className="text-xs font-medium text-slate-600 dark:text-slate-400">
               {day}
             </div>
           ))}
@@ -509,7 +590,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
 
       {/* Индикатор свайпа для мобильных устройств */}
       {isMobile && (
-        <div className="flex justify-center items-center py-1 text-muted-foreground text-xs">
+        <div className="flex justify-center items-center py-1.5 text-muted-foreground text-xs bg-slate-50/80 dark:bg-zinc-800/80 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="12"
@@ -544,7 +625,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
 
       {/* Контейнер календаря с содержимым */}
       <div
-        className="relative bg-muted/30"
+        className="relative bg-white dark:bg-zinc-900"
         style={{
           height: contentHeight ? `${contentHeight}px` : "auto",
           transition: "height 0.3s ease-in-out",
@@ -565,7 +646,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
             exit="exit"
             transition={{
               x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
+              opacity: { duration: 0 },
             }}
             className="w-full absolute left-0 right-0"
           >

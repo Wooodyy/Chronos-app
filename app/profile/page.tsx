@@ -17,7 +17,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { format } from "date-fns"
 import { ImageCropper } from "@/components/features/profile/image-cropper"
 import { useNotification } from "@/components/ui/notification"
-import { useRouter } from "next/navigation"
 
 export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
@@ -27,7 +26,7 @@ export default function ProfilePage() {
   const { user, logout, updateUserData } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { showNotification } = useNotification()
-  const router = useRouter()
+  const userDataRefreshedRef = useRef(false)
 
   // Состояние для формы
   const [firstName, setFirstName] = useState("")
@@ -47,11 +46,24 @@ export default function ProfilePage() {
     if (user) {
       if (user.firstName) setFirstName(user.firstName)
       if (user.lastName) setLastName(user.lastName)
-      console.log("User data loaded:", user) // Добавим для отладки
       if (user.email) setEmail(user.email)
       if (user.avatar) setAvatarPreview(user.avatar)
     }
   }, [user])
+
+  // Обновляем данные пользователя при первом рендере страницы
+  useEffect(() => {
+    if (user && !userDataRefreshedRef.current) {
+      userDataRefreshedRef.current = true
+
+      // Используем setTimeout, чтобы избежать циклических обновлений
+      const timer = setTimeout(() => {
+        updateUserData()
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [user, updateUserData])
 
   const handleSave = async () => {
     if (!user) return
@@ -63,9 +75,6 @@ export default function ProfilePage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
         },
         body: JSON.stringify({
           firstName,
@@ -82,9 +91,6 @@ export default function ProfilePage() {
 
         // Обновляем данные пользователя
         await updateUserData()
-
-        // Принудительно обновляем страницу для отображения новых данных
-        router.refresh()
       } else {
         // Показываем уведомление об ошибке
         showNotification(data.message || "Не удалось обновить профиль", "error")
@@ -227,7 +233,7 @@ export default function ProfilePage() {
                   <AvatarFallback>{user?.name?.substring(0, 2) || "U"}</AvatarFallback>
                 </Avatar>
                 <button
-                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 opacity-100 group-hover:bg-primary/50 transition-opacity"
+                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={handleAvatarButtonClick}
                   disabled={isUploadingAvatar}
                 >

@@ -5,8 +5,28 @@ import { EntriesList } from "@/components/features/entries/entries-list"
 import { entries } from "@/data/entries"
 import { useRouter } from "next/navigation"
 
+// Import the necessary hooks and add a useEffect to refresh user data
+import { useEffect, useRef } from "react"
+import { useAuth } from "@/contexts/auth-context"
+
 export default function RemindersPage() {
   const router = useRouter()
+  const { refreshData, user } = useAuth()
+  const userDataRefreshedRef = useRef(false)
+
+  // Обновляем данные пользователя при первом рендере страницы
+  useEffect(() => {
+    if (user && !userDataRefreshedRef.current) {
+      userDataRefreshedRef.current = true
+
+      // Используем setTimeout, чтобы избежать циклических обновлений
+      const timer = setTimeout(() => {
+        refreshData()
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [user, refreshData])
 
   // Фильтруем только напоминания
   const reminders = entries.filter((entry) => entry.type === "reminder")

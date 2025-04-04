@@ -11,11 +11,12 @@ import type { Entry } from "@/types/entry"
 
 export default function NotesPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, refreshData } = useAuth()
   const { showNotification } = useNotification()
   const [notes, setNotes] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const dataFetchedRef = useRef(false)
+  const userDataRefreshedRef = useRef(false)
 
   // Загружаем заметки из базы данных
   useEffect(() => {
@@ -59,8 +60,19 @@ export default function NotesPage() {
     fetchNotes()
   }, [user?.login, showNotification])
 
-  // No need to filter notes by search query anymore
-  const filteredNotes = notes
+  // Обновляем данные пользователя при первом рендере страницы
+  useEffect(() => {
+    if (user && !userDataRefreshedRef.current) {
+      userDataRefreshedRef.current = true
+
+      // Используем setTimeout, чтобы избежать циклических обновлений
+      const timer = setTimeout(() => {
+        refreshData()
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [user, refreshData])
 
   if (!user) {
     router.push("/login")
@@ -96,7 +108,7 @@ export default function NotesPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <EntriesList entries={filteredNotes} showDate={true} />
+          <EntriesList entries={notes} showDate={true} />
         )}
       </div>
 
