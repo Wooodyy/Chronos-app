@@ -1,6 +1,7 @@
 "use client"
 
-import React from "react"
+import type React from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ru } from "date-fns/locale"
@@ -19,7 +20,6 @@ import {
 } from "date-fns"
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { entries as staticEntries } from "@/data/entries"
-import { motion, AnimatePresence } from "framer-motion"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Entry } from "@/types/entry"
 
@@ -30,110 +30,87 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarViewProps) {
-  const [currentDate, setCurrentDate] = React.useState(selectedDate)
-  const [view, setView] = React.useState<"week" | "month">("week")
-  const [direction, setDirection] = React.useState(0)
-  const calendarRef = React.useRef<HTMLDivElement>(null)
-  const contentRef = React.useRef<HTMLDivElement>(null)
-  const swipeRef = React.useRef<{
-    startX: number
-    startY: number
-    startTime: number
-  } | null>(null)
-  const [contentHeight, setContentHeight] = React.useState<number | null>(null)
-  const [isAnimating, setIsAnimating] = React.useState(false)
+  const [currentDate, setCurrentDate] = useState(selectedDate)
+  const [view, setView] = useState<"week" | "month">("week")
+  const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null)
+  const calendarRef = useRef<HTMLDivElement>(null)
   const isMobile = useMediaQuery("(max-width: 640px)")
   const isSmallMobile = useMediaQuery("(max-width: 380px)")
   const today = new Date()
 
-  // Обновляем высоту контента при изменении представления или размера окна
-  React.useEffect(() => {
-    const updateHeight = () => {
-      if (contentRef.current) {
-        const height = contentRef.current.scrollHeight
-        setContentHeight(height)
-      }
+  // Обработчики навигации
+  const handlePrevious = useCallback(() => {
+    setSlideDirection("right")
+
+    if (view === "week") {
+      setCurrentDate((prev) => addDays(prev, -7))
+    } else {
+      setCurrentDate((prev) => addMonths(prev, -1))
     }
 
-    // Обновляем высоту после рендеринга
-    updateHeight()
+    // Сбрасываем направление анимации после завершения
+    setTimeout(() => setSlideDirection(null), 300)
+  }, [view])
 
-    // Добавляем слушатль изменения размера окна
-    window.addEventListener("resize", updateHeight)
+  const handleNext = useCallback(() => {
+    setSlideDirection("left")
 
-    // Очищаем слушатель при размонтировании
-    return () => {
-      window.removeEventListener("resize", updateHeight)
+    if (view === "week") {
+      setCurrentDate((prev) => addDays(prev, 7))
+    } else {
+      setCurrentDate((prev) => addMonths(prev, 1))
     }
-  }, [view, currentDate])
 
-  const handlePrevious = () => {
-    if (isAnimating) return
-    setIsAnimating(true)
-    setDirection(-1)
+    // Сбрасываем направление анимации после завершения
+    setTimeout(() => setSlideDirection(null), 300)
+  }, [view])
 
-    switch (view) {
-      case "week":
-        setCurrentDate((prev) => addDays(prev, -7))
-        break
-      case "month":
-        setCurrentDate((prev) => addMonths(prev, -1))
-        break
-    }
-  }
-
-  const handleNext = () => {
-    if (isAnimating) return
-    setIsAnimating(true)
-    setDirection(1)
-
-    switch (view) {
-      case "week":
-        setCurrentDate((prev) => addDays(prev, 7))
-        break
-      case "month":
-        setCurrentDate((prev) => addMonths(prev, 1))
-        break
-    }
-  }
-
-  const handleToday = () => {
+  const handleToday = useCallback(() => {
     setCurrentDate(today)
     onDateSelect(today)
-  }
+  }, [today, onDateSelect])
 
   // Обработчик переключения представления
-  const handleViewChange = (newView: "week" | "month") => {
-    if (view === newView) return
+  const handleViewChange = useCallback(
+    (newView: "week" | "month") => {
+      if (view === newView) return
 
-    // При переключении на недельное представление,
-    // устанавливаем текущую дату на выбранную дату
-    if (newView === "week") {
-      setCurrentDate(selectedDate)
-    }
+      // При переключении на недельное представление,
+      // устанавливаем текущую дату на выбранную дату
+      if (newView === "week") {
+        setCurrentDate(selectedDate)
+      }
 
-    setView(newView)
-  }
+      setView(newView)
+    },
+    [view, selectedDate],
+  )
 
-  const getEventsForDay = (date: Date) => {
-    // Получаем напоминания и заметки из статического файла
-    const staticEvents = staticEntries.filter((entry) => isSameDay(entry.date, date))
+  // Оптимизированная функция получения событий для дня
+  const getEventsForDay = useCallback(
+    (date: Date) => {
+      // Получаем напоминания и заметки из статического файла
+      const staticEvents = staticEntries.filter((entry) => isSameDay(entry.date, date))
+      // Получаем задачи из базы данных
+      const dbEvents = dbTasks.filter((entry) => isSameDay(entry.date, date))
+      // Объединяем события
+      return [...staticEvents, ...dbEvents]
+    },
+    [dbTasks],
+  )
 
-    // Получаем задачи из базы данных
-    const dbEvents = dbTasks.filter((entry) => isSameDay(entry.date, date))
+  // Мемоизированная функция для получения уникальных типов событий
+  const getUniqueEventTypes = useCallback(
+    (date: Date) => {
+      const events = getEventsForDay(date)
+      const uniqueTypes = new Set(events.map((event) => event.type))
+      return Array.from(uniqueTypes).slice(0, 3)
+    },
+    [getEventsForDay],
+  )
 
-    // Объединяем события
-    return [...staticEvents, ...dbEvents]
-  }
-
-  // Функция для получения уникальных типов событий для дня (максимум 3 типа)
-  const getUniqueEventTypes = (date: Date) => {
-    const events = getEventsForDay(date)
-    const uniqueTypes = new Set(events.map((event) => event.type))
-    return Array.from(uniqueTypes).slice(0, 3)
-  }
-
-  const getDaysToDisplay = () => {
+  // Мемоизированная функция для получения дней для отображения
+  const days = useMemo(() => {
     switch (view) {
       case "week":
         return eachDayOfInterval({
@@ -147,25 +124,72 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
         const lastWeek = endOfWeek(end, { locale: ru })
         return eachDayOfInterval({ start: firstWeek, end: lastWeek })
     }
-  }
+  }, [currentDate, view])
 
-  // Обработчик колесика мыши для горизонтального скролла
-  const handleWheel = (e: React.WheelEvent) => {
-    // Если нажат Shift или это горизонтальный скролл
-    if (e.deltaX !== 0) {
-      e.preventDefault()
+  // Оптимизированный обработчик свайпов
+  useEffect(() => {
+    const calendarContainer = calendarRef.current
+    if (!calendarContainer) return
 
-      // Используем дебаунс для предотвращения слишком частых переключений
-      if (e.deltaX > 50) {
-        handleNext()
-      } else if (e.deltaX < -50) {
-        handlePrevious()
+    let startX = 0
+    let startY = 0
+    let startTime = 0
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0]
+      startX = touch.clientX
+      startY = touch.clientY
+      startTime = Date.now()
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touch = e.changedTouches[0]
+      const deltaX = touch.clientX - startX
+      const deltaY = touch.clientY - startY
+      const deltaTime = Date.now() - startTime
+
+      // Проверяем, что это был быстрый горизонтальный свайп
+      if (
+        Math.abs(deltaX) > 50 && // Минимальное расстояние свайпа
+        Math.abs(deltaX) > Math.abs(deltaY) && // Горизонтальное движение больше вертикального
+        deltaTime < 300 // Свайп был быстрым (менее 300мс)
+      ) {
+        if (deltaX > 0) {
+          handlePrevious()
+        } else {
+          handleNext()
+        }
       }
     }
-  }
 
-  // Добавляем обработчик preventDefault для горизонтального скролла
-  React.useEffect(() => {
+    calendarContainer.addEventListener("touchstart", handleTouchStart, { passive: true })
+    calendarContainer.addEventListener("touchend", handleTouchEnd, { passive: true })
+
+    return () => {
+      calendarContainer.removeEventListener("touchstart", handleTouchStart)
+      calendarContainer.removeEventListener("touchend", handleTouchEnd)
+    }
+  }, [handleNext, handlePrevious])
+
+  // Оптимизированный обработчик колесика мыши
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      // Если это горизонтальный скролл
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 50) {
+        e.preventDefault()
+
+        if (e.deltaX > 0) {
+          handleNext()
+        } else {
+          handlePrevious()
+        }
+      }
+    },
+    [handleNext, handlePrevious],
+  )
+
+  // Предотвращаем стандартное поведение горизонтального скролла
+  useEffect(() => {
     const currentRef = calendarRef.current
 
     const preventDefaultScroll = (e: WheelEvent) => {
@@ -181,102 +205,16 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     }
   }, [])
 
-  // Настраиваем обработчики свайпов для мобильных устройств
-  React.useEffect(() => {
-    const calendarContainer = calendarRef.current
-    if (!calendarContainer) return
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (isAnimating) return
-
-      const touch = e.touches[0]
-      swipeRef.current = {
-        startX: touch.clientX,
-        startY: touch.clientY,
-        startTime: Date.now(),
-      }
-    }
-
-    const handleTouchMove = (e: TouchEvent) => {
-      // Предотвращаем стандартное поведение только если это горизонтальный свайп
-      if (swipeRef.current) {
-        const touch = e.touches[0]
-        const deltaX = touch.clientX - swipeRef.current.startX
-        const deltaY = touch.clientY - swipeRef.current.startY
-
-        // Если горизонтальное движение больше вертикального, предотвращаем скролл
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          e.preventDefault()
-        }
-      }
-    }
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (!swipeRef.current || isAnimating) return
-
-      const touch = e.changedTouches[0]
-      const deltaX = touch.clientX - swipeRef.current.startX
-      const deltaY = touch.clientY - swipeRef.current.startY
-      const deltaTime = Date.now() - swipeRef.current.startTime
-
-      // Проверяем, что это был быстрый горизонтальный свайп
-      // и вертикальное движение было минимальным
-      if (
-        Math.abs(deltaX) > 50 && // Минимальное расстояние свайпа
-        Math.abs(deltaX) > Math.abs(deltaY) && // Горизонтальное движение больше вертикального
-        deltaTime < 300 // Свайп был быстрым (менее 300мс)
-      ) {
-        if (deltaX > 0) {
-          handlePrevious()
-        } else {
-          handleNext()
-        }
-      }
-
-      swipeRef.current = null
-    }
-
-    calendarContainer.addEventListener("touchstart", handleTouchStart, { passive: true })
-    calendarContainer.addEventListener("touchmove", handleTouchMove, { passive: false })
-    calendarContainer.addEventListener("touchend", handleTouchEnd, { passive: true })
-
-    return () => {
-      calendarContainer.removeEventListener("touchstart", handleTouchStart)
-      calendarContainer.removeEventListener("touchmove", handleTouchMove)
-      calendarContainer.removeEventListener("touchend", handleTouchEnd)
-    }
-  }, [isAnimating])
-
-  const days = getDaysToDisplay()
-
-  // Варианты анимации для календаря в стиле слайдера
-  const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? "100%" : "-100%",
-      opacity: 1,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? "100%" : "-100%",
-      opacity: 1,
-    }),
-  }
-
-  // Получаем названия дней недели
-  const getDayNames = () => {
+  // Мемоизированные названия дней недели
+  const dayNames = useMemo(() => {
     return eachDayOfInterval({
       start: startOfWeek(new Date(), { locale: ru }),
       end: endOfWeek(new Date(), { locale: ru }),
     }).map((date) => format(date, isSmallMobile ? "EEEEE" : "EEEEEE", { locale: ru }).toUpperCase())
-  }
+  }, [isSmallMobile])
 
-  const dayNames = getDayNames()
-
-  // Получаем цвет для типа события
-  const getEventTypeColor = (type: Entry["type"], isSelected: boolean) => {
+  // Оптимизированная функция для получения цвета типа события
+  const getEventTypeColor = useCallback((type: Entry["type"], isSelected: boolean) => {
     if (isSelected) return "bg-white/90"
 
     switch (type) {
@@ -289,66 +227,122 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
       default:
         return "bg-gray-500"
     }
-  }
+  }, [])
 
-  // Получаем месяц и год для отображения
-  const monthYear = format(currentDate, "LLLL yyyy", { locale: ru })
-  const capitalizedMonthYear = monthYear.charAt(0).toUpperCase() + monthYear.slice(1)
+  // Мемоизированный месяц и год для отображения
+  const capitalizedMonthYear = useMemo(() => {
+    const monthYear = format(currentDate, "LLLL yyyy", { locale: ru })
+    return monthYear.charAt(0).toUpperCase() + monthYear.slice(1)
+  }, [currentDate])
 
-  // Компонент для рендеринга содержимого календаря
-  const CalendarContent = React.useCallback(() => {
+  // Оптимизированный рендеринг дней недели
+  const renderWeekView = useCallback(() => {
     return (
-      <>
-        {/* Недельное представление */}
-        {view === "week" && (
-          <div className="grid grid-cols-7 gap-2 p-3 sm:p-4 md:p-6">
-            {days.map((date) => {
-              const eventTypes = getUniqueEventTypes(date)
-              const isSelected = isSameDay(date, selectedDate)
-              const isCurrentDay = isToday(date)
-              const isCurrentMonth = isSameMonth(date, currentDate)
-              const dayNumber = format(date, "d")
-              const events = getEventsForDay(date)
-              const hasEvents = events.length > 0
+      <div className="grid grid-cols-7 gap-2 p-3 sm:p-4 md:p-6">
+        {days.map((date) => {
+          const eventTypes = getUniqueEventTypes(date)
+          const isSelected = isSameDay(date, selectedDate)
+          const isCurrentDay = isToday(date)
+          const isCurrentMonth = isSameMonth(date, currentDate)
+          const dayNumber = format(date, "d")
+          const events = getEventsForDay(date)
+          const hasEvents = events.length > 0
 
-              return (
-                <motion.button
-                  key={date.toString()}
+          return (
+            <button
+              key={date.toString()}
+              onClick={() => onDateSelect(date)}
+              className={cn(
+                "flex flex-col items-center justify-start rounded-xl p-2 sm:p-3 text-center relative overflow-hidden group",
+                "transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 active:scale-95",
+                isSelected
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : isCurrentDay
+                    ? "bg-primary/5 shadow-sm border border-primary/10"
+                    : !isCurrentMonth
+                      ? "text-muted-foreground/50"
+                      : hasEvents
+                        ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
+                        : "hover:bg-accent/30",
+              )}
+            >
+              {isSelected && <div className="absolute inset-0 bg-primary/10 z-0" />}
+
+              {hasEvents && !isSelected && (
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-0" />
+              )}
+
+              <span
+                className={cn(
+                  "text-sm sm:text-base relative z-10 mb-1",
+                  isSelected ? "font-bold" : isCurrentDay ? "font-semibold" : "font-medium",
+                )}
+              >
+                {dayNumber}
+              </span>
+
+              {eventTypes.length > 0 && (
+                <div className="flex justify-center gap-1 mt-auto z-10">
+                  {eventTypes.map((type, idx) => (
+                    <span
+                      key={idx}
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        getEventTypeColor(type, isSelected),
+                        isSelected && "shadow-sm",
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }, [days, selectedDate, currentDate, getUniqueEventTypes, getEventsForDay, getEventTypeColor, onDateSelect])
+
+  // Оптимизированный рендеринг месячного представления
+  const renderMonthView = useCallback(() => {
+    return (
+      <div className="p-3 sm:p-4 md:p-6">
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((date) => {
+            const eventTypes = getUniqueEventTypes(date)
+            const isSelected = isSameDay(date, selectedDate)
+            const isCurrentDay = isToday(date)
+            const isCurrentMonth = isSameMonth(date, currentDate)
+            const dayNumber = format(date, "d")
+            const events = getEventsForDay(date)
+            const hasEvents = events.length > 0
+
+            return (
+              <div key={date.toString()} className="p-0.5">
+                <button
                   onClick={() => onDateSelect(date)}
                   className={cn(
-                    "flex flex-col items-center justify-start rounded-xl p-2 sm:p-3 text-center transition-all relative overflow-hidden group",
+                    "w-full h-8 sm:h-9 flex flex-col items-center justify-center rounded-md text-center relative overflow-hidden group",
+                    "transition-all duration-200 hover:scale-105 active:scale-95",
                     isSelected
-                      ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+                      ? "bg-primary text-primary-foreground shadow-md"
                       : isCurrentDay
                         ? "bg-primary/5 shadow-sm border border-primary/10"
                         : !isCurrentMonth
-                          ? "text-muted-foreground/50"
+                          ? "text-muted-foreground/40"
                           : hasEvents
                             ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
                             : "hover:bg-accent/30",
                   )}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  initial={isSelected ? { scale: 1.05 } : { scale: 1 }}
-                  animate={isSelected ? { scale: 1.05 } : { scale: 1 }}
-                  transition={{ duration: 0.2 }}
                 >
-                  {isSelected && (
-                    <motion.div
-                      className="absolute inset-0 bg-primary/10 z-0"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  )}
+                  {isSelected && <div className="absolute inset-0 bg-primary/10 z-0" />}
 
                   {hasEvents && !isSelected && (
-                    <motion.div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-0" />
                   )}
 
                   <span
                     className={cn(
-                      "text-sm sm:text-base relative z-10 mb-1",
+                      "text-xs sm:text-sm relative z-10",
                       isSelected ? "font-bold" : isCurrentDay ? "font-semibold" : "font-medium",
                     )}
                   >
@@ -356,146 +350,49 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                   </span>
 
                   {eventTypes.length > 0 && (
-                    <div className="flex justify-center gap-1 mt-auto z-10">
+                    <div className="absolute bottom-0.5 flex justify-center gap-0.5 z-10">
                       {eventTypes.map((type, idx) => (
-                        <motion.span
+                        <span
                           key={idx}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: idx * 0.1 }}
                           className={cn(
-                            "h-1.5 w-1.5 rounded-full shadow-[0_0_3px_rgba(0,0,0,0.1)]",
+                            "h-1 w-1 rounded-full",
                             getEventTypeColor(type, isSelected),
-                            isSelected && "shadow-[0_0_5px_rgba(255,255,255,0.5)]",
+                            isSelected && "shadow-sm",
                           )}
                         />
                       ))}
                     </div>
                   )}
-                </motion.button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Месячное представление */}
-        {view === "month" && (
-          <div className="p-3 sm:p-4 md:p-6">
-            {/* Сетка дней */}
-            <div className="grid grid-cols-7 gap-1">
-              {days.map((date) => {
-                const eventTypes = getUniqueEventTypes(date)
-                const isSelected = isSameDay(date, selectedDate)
-                const isCurrentDay = isToday(date)
-                const isCurrentMonth = isSameMonth(date, currentDate)
-                const dayNumber = format(date, "d")
-                const events = getEventsForDay(date)
-                const hasEvents = events.length > 0
-
-                return (
-                  <div key={date.toString()} className="p-0.5">
-                    <motion.button
-                      onClick={() => onDateSelect(date)}
-                      className={cn(
-                        "w-full h-8 sm:h-9 flex flex-col items-center justify-center rounded-md text-center transition-all relative overflow-hidden group",
-                        isSelected
-                          ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(139,92,246,0.3)]"
-                          : isCurrentDay
-                            ? "bg-primary/5 shadow-sm border border-primary/10"
-                            : !isCurrentMonth
-                              ? "text-muted-foreground/40"
-                              : hasEvents
-                                ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
-                                : "hover:bg-accent/30",
-                      )}
-                      whileHover={{ scale: 1.05, y: -1 }}
-                      whileTap={{ scale: 0.95 }}
-                      initial={isSelected ? { scale: 1.05 } : { scale: 1 }}
-                      animate={isSelected ? { scale: 1.05 } : { scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {isSelected && (
-                        <motion.div
-                          className="absolute inset-0 bg-primary/10 z-0"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                        />
-                      )}
-
-                      {hasEvents && !isSelected && (
-                        <motion.div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0" />
-                      )}
-
-                      <span
-                        className={cn(
-                          "text-xs sm:text-sm relative z-10",
-                          isSelected ? "font-bold" : isCurrentDay ? "font-semibold" : "font-medium",
-                        )}
-                      >
-                        {dayNumber}
-                      </span>
-
-                      {eventTypes.length > 0 && (
-                        <div className="absolute bottom-0.5 flex justify-center gap-0.5 z-10">
-                          {eventTypes.map((type, idx) => (
-                            <motion.span
-                              key={idx}
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: idx * 0.1 }}
-                              className={cn(
-                                "h-1 w-1 rounded-full shadow-[0_0_3px_rgba(0,0,0,0.1)]",
-                                getEventTypeColor(type, isSelected),
-                                isSelected && "shadow-[0_0_5px_rgba(255,255,255,0.5)]",
-                              )}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </motion.button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </>
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     )
-  }, [view, days, currentDate, selectedDate, dbTasks])
+  }, [days, selectedDate, currentDate, getUniqueEventTypes, getEventsForDay, getEventTypeColor, onDateSelect])
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-900 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-slate-200/50 dark:border-slate-800/50"
+      className="w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-900 shadow-md border border-slate-200/50 dark:border-slate-800/50"
       ref={calendarRef}
       onWheel={handleWheel}
     >
       {/* Заголовок календаря */}
       <div className="flex flex-col gap-3 p-4 sm:p-5 md:p-6 border-b border-slate-200/70 dark:border-slate-800/70 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent relative overflow-hidden">
-        {/* Декоративные элементы */}
+        {/* Декоративные элементы (статические) */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl opacity-30 -translate-y-20 translate-x-20"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl opacity-20 translate-y-20 -translate-x-20"></div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
           <div className="flex items-center gap-3">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.2)] border border-slate-200/50 dark:border-slate-700/50"
-            >
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow-sm border border-slate-200/50 dark:border-slate-700/50">
               <CalendarIcon className="h-5 w-5 text-primary" />
-            </motion.div>
+            </div>
             <div className="flex flex-col">
-              <motion.h2
-                key={capitalizedMonthYear}
-                initial={{ y: -10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="text-xl sm:text-2xl font-medium whitespace-nowrap tracking-tight"
-              >
+              <h2 className="text-xl sm:text-2xl font-medium whitespace-nowrap tracking-tight">
                 {capitalizedMonthYear}
-              </motion.h2>
+              </h2>
               <p className="text-xs text-muted-foreground/80 font-medium">
                 {view === "week" ? "Недельный просмотр" : "Месячный просмотр"}
               </p>
@@ -537,43 +434,29 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
             </Button>
 
             {/* Переключатель режимов просмотра */}
-            <div className="relative h-9 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 overflow-hidden">
-              {/* Движущийся индикатор активного режима */}
-              <motion.div
-                className="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-800 shadow-sm z-0"
-                initial={false}
-                animate={{
-                  x: view === "week" ? 0 : "100%",
-                  width: "calc(50% - 4px)",
-                }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              />
-
-              {/* Кнопки переключения */}
-              <div className="relative z-10 flex">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleViewChange("week")}
-                  className={cn(
-                    "h-7 px-4 rounded-md transition-colors duration-200 border-none shadow-none",
-                    view === "week" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Неделя
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleViewChange("month")}
-                  className={cn(
-                    "h-7 px-4 rounded-md transition-colors duration-200 border-none shadow-none",
-                    view === "month" ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Месяц
-                </Button>
-              </div>
+            <div className="flex h-9 rounded-lg overflow-hidden shadow-sm border border-slate-200/50 dark:border-slate-700/50">
+              <button
+                onClick={() => handleViewChange("week")}
+                className={cn(
+                  "px-4 h-full transition-all duration-200 font-medium text-sm",
+                  view === "week"
+                    ? "bg-primary text-primary-foreground shadow-inner"
+                    : "bg-white/90 dark:bg-zinc-800/90 text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-zinc-800 hover:text-primary",
+                )}
+              >
+                Неделя
+              </button>
+              <button
+                onClick={() => handleViewChange("month")}
+                className={cn(
+                  "px-4 h-full transition-all duration-200 font-medium text-sm",
+                  view === "month"
+                    ? "bg-primary text-primary-foreground shadow-inner"
+                    : "bg-white/90 dark:bg-zinc-800/90 text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-zinc-800 hover:text-primary",
+                )}
+              >
+                Месяц
+              </button>
             </div>
           </div>
         </div>
@@ -591,70 +474,21 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
       {/* Индикатор свайпа для мобильных устройств */}
       {isMobile && (
         <div className="flex justify-center items-center py-1.5 text-muted-foreground text-xs bg-slate-50/80 dark:bg-zinc-800/80 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-chevron-left mr-1 animate-pulse"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <ChevronLeft className="h-3 w-3 mr-1" />
           Свайпните для навигации
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-chevron-right ml-1 animate-pulse"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
+          <ChevronRight className="h-3 w-3 ml-1" />
         </div>
       )}
 
       {/* Контейнер календаря с содержимым */}
       <div
-        className="relative bg-white dark:bg-zinc-900"
-        style={{
-          height: contentHeight ? `${contentHeight}px` : "auto",
-          transition: "height 0.3s ease-in-out",
-        }}
+        className={cn(
+          "relative bg-white dark:bg-zinc-900 transition-all duration-300",
+          slideDirection === "left" ? "animate-slideLeft" : slideDirection === "right" ? "animate-slideRight" : "",
+        )}
       >
-        {/* Скрытый контейнер для измерения высоты */}
-        <div ref={contentRef} className="absolute opacity-0 pointer-events-none" aria-hidden="true">
-          <CalendarContent />
-        </div>
-
-        <AnimatePresence initial={false} custom={direction} mode="sync" onExitComplete={() => setIsAnimating(false)}>
-          <motion.div
-            key={currentDate.toISOString() + view}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0 },
-            }}
-            className="w-full absolute left-0 right-0"
-          >
-            <CalendarContent />
-          </motion.div>
-        </AnimatePresence>
+        {view === "week" ? renderWeekView() : renderMonthView()}
       </div>
     </div>
   )
 }
-
