@@ -13,7 +13,13 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: "Chronos"
+  title: "Chronos",
+  description: "Ваш личный цифровой ассистент для задач, напоминаний и заметок",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+    shortcut: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({
@@ -23,6 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className={cn(montserrat.variable, "font-sans antialiased")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
@@ -33,7 +43,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-
-
-import './globals.css'

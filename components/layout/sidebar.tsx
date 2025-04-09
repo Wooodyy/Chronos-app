@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Calendar, Bell, BookMarked, User2, Mic, Menu, Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -81,10 +82,14 @@ export function Sidebar() {
       <div className="relative flex items-center justify-between p-6 z-10">
         {!isCollapsed && (
           <div className="flex items-center gap-3 transition-opacity duration-300">
-            <div className="relative flex h-10 w-10 items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-primary/60" />
-              <span className="relative text-base font-bold text-white">C</span>
-              <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
+            <div className="relative">
+              <Image
+                src="/logo.png"
+                alt="Chronos Logo"
+                width={40}
+                height={40}
+                className="relative z-10 drop-shadow-[0_0_10px_rgba(139,92,246,0.7)]"
+              />
             </div>
             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
               Chronos
@@ -243,10 +248,14 @@ export function Sidebar() {
       {/* Content */}
       <div className="relative flex items-center justify-between p-4 z-10">
         <div className="flex items-center gap-3">
-          <div className="relative flex h-9 w-9 items-center justify-center">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-primary/60" />
-            <span className="relative text-sm font-bold text-white">C</span>
-            <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
+          <div className="relative">
+            <Image
+              src="/logo.png"
+              alt="Chronos Logo"
+              width={32}
+              height={32}
+              className="relative z-10 drop-shadow-[0_0_10px_rgba(139,92,246,0.7)]"
+            />
           </div>
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
             Chronos

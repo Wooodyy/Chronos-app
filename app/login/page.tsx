@@ -5,12 +5,13 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Clock } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 export default function LoginPage() {
@@ -64,8 +65,14 @@ export default function LoginPage() {
         <Card className="border-none shadow-lg">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Clock className="h-6 w-6 text-primary" />
+              <div className="flex justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="Chronos Logo"
+                  width={64}
+                  height={64}
+                  className="drop-shadow-[0_0_10px_rgba(139,92,246,0.7)]"
+                />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold">Chronos</CardTitle>
@@ -125,4 +132,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

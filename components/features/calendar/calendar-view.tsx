@@ -38,7 +38,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
   const isSmallMobile = useMediaQuery("(max-width: 380px)")
   const today = new Date()
 
-  // Обработчики навигации
+  // Enhance the navigation buttons with glow effect
   const handlePrevious = useCallback(() => {
     setSlideDirection("right")
 
@@ -235,7 +235,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     return monthYear.charAt(0).toUpperCase() + monthYear.slice(1)
   }, [currentDate])
 
-  // Оптимизированный рендеринг дней недели
+  // Enhance the renderWeekView function to add glow effects to the selected date
   const renderWeekView = useCallback(() => {
     return (
       <div className="grid grid-cols-7 gap-2 p-3 sm:p-4 md:p-6">
@@ -256,14 +256,14 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                 "flex flex-col items-center justify-start rounded-xl p-2 sm:p-3 text-center relative overflow-hidden group",
                 "transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 active:scale-95",
                 isSelected
-                  ? "bg-primary text-primary-foreground shadow-md"
+                  ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(139,92,246,0.6)]"
                   : isCurrentDay
-                    ? "bg-primary/5 shadow-sm border border-primary/10"
+                    ? "bg-primary/5 shadow-sm border border-primary/10 hover:shadow-[0_0_10px_rgba(139,92,246,0.3)]"
                     : !isCurrentMonth
                       ? "text-muted-foreground/50"
                       : hasEvents
-                        ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
-                        : "hover:bg-accent/30",
+                        ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent hover:shadow-[0_0_8px_rgba(139,92,246,0.2)]"
+                        : "hover:bg-accent/30 hover:shadow-[0_0_8px_rgba(139,92,246,0.2)]",
               )}
             >
               {isSelected && <div className="absolute inset-0 bg-primary/10 z-0" />}
@@ -275,7 +275,11 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
               <span
                 className={cn(
                   "text-sm sm:text-base relative z-10 mb-1",
-                  isSelected ? "font-bold" : isCurrentDay ? "font-semibold" : "font-medium",
+                  isSelected
+                    ? "font-bold drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]"
+                    : isCurrentDay
+                      ? "font-semibold"
+                      : "font-medium",
                 )}
               >
                 {dayNumber}
@@ -289,7 +293,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
                         getEventTypeColor(type, isSelected),
-                        isSelected && "shadow-sm",
+                        isSelected && "shadow-[0_0_5px_rgba(255,255,255,0.5)]",
                       )}
                     />
                   ))}
@@ -302,7 +306,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     )
   }, [days, selectedDate, currentDate, getUniqueEventTypes, getEventsForDay, getEventTypeColor, onDateSelect])
 
-  // Оптимизированный рендеринг месячного представления
+  // Enhance the renderMonthView function to add glow effects to the selected date
   const renderMonthView = useCallback(() => {
     return (
       <div className="p-3 sm:p-4 md:p-6">
@@ -324,14 +328,14 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                     "w-full h-8 sm:h-9 flex flex-col items-center justify-center rounded-md text-center relative overflow-hidden group",
                     "transition-all duration-200 hover:scale-105 active:scale-95",
                     isSelected
-                      ? "bg-primary text-primary-foreground shadow-md"
+                      ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(139,92,246,0.6)]"
                       : isCurrentDay
-                        ? "bg-primary/5 shadow-sm border border-primary/10"
+                        ? "bg-primary/5 shadow-sm border border-primary/10 hover:shadow-[0_0_10px_rgba(139,92,246,0.3)]"
                         : !isCurrentMonth
                           ? "text-muted-foreground/40"
                           : hasEvents
-                            ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent"
-                            : "hover:bg-accent/30",
+                            ? "hover:bg-primary/5 hover:border-primary/10 hover:shadow-sm border border-transparent hover:shadow-[0_0_8px_rgba(139,92,246,0.2)]"
+                            : "hover:bg-accent/30 hover:shadow-[0_0_8px_rgba(139,92,246,0.2)]",
                   )}
                 >
                   {isSelected && <div className="absolute inset-0 bg-primary/10 z-0" />}
@@ -343,7 +347,11 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                   <span
                     className={cn(
                       "text-xs sm:text-sm relative z-10",
-                      isSelected ? "font-bold" : isCurrentDay ? "font-semibold" : "font-medium",
+                      isSelected
+                        ? "font-bold drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]"
+                        : isCurrentDay
+                          ? "font-semibold"
+                          : "font-medium",
                     )}
                   >
                     {dayNumber}
@@ -357,7 +365,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                           className={cn(
                             "h-1 w-1 rounded-full",
                             getEventTypeColor(type, isSelected),
-                            isSelected && "shadow-sm",
+                            isSelected && "shadow-[0_0_5px_rgba(255,255,255,0.5)]",
                           )}
                         />
                       ))}
@@ -372,6 +380,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     )
   }, [days, selectedDate, currentDate, getUniqueEventTypes, getEventsForDay, getEventTypeColor, onDateSelect])
 
+  // Update the button styles in the return section to add glow effects
   return (
     <div
       className="w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-900 shadow-md border border-slate-200/50 dark:border-slate-800/50"
@@ -387,10 +396,10 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
         <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow-sm border border-slate-200/50 dark:border-slate-700/50">
-              <CalendarIcon className="h-5 w-5 text-primary" />
+              <CalendarIcon className="h-5 w-5 text-primary drop-shadow-[0_0_5px_rgba(139,92,246,0.7)]" />
             </div>
             <div className="flex flex-col">
-              <h2 className="text-xl sm:text-2xl font-medium whitespace-nowrap tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-medium whitespace-nowrap tracking-tight drop-shadow-[0_0_2px_rgba(139,92,246,0.3)]">
                 {capitalizedMonthYear}
               </h2>
               <p className="text-xs text-muted-foreground/80 font-medium">
@@ -405,7 +414,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                   variant="ghost"
                   size="icon"
                   onClick={handlePrevious}
-                  className="h-8 w-8 rounded-full hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-primary shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  className="h-8 w-8 rounded-full hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-primary shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-[0_0_10px_rgba(139,92,246,0.4)]"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -413,7 +422,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                   variant="ghost"
                   size="icon"
                   onClick={handleNext}
-                  className="h-8 w-8 rounded-full hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-primary shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  className="h-8 w-8 rounded-full hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-primary shadow-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-[0_0_10px_rgba(139,92,246,0.4)]"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -428,7 +437,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
               variant="ghost"
               size="sm"
               onClick={handleToday}
-              className="h-9 px-4 rounded-lg bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary transition-all duration-200 shadow-sm border border-slate-200/50 dark:border-slate-700/50 font-medium"
+              className="h-9 px-4 rounded-lg bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary transition-all duration-200 shadow-sm border border-slate-200/50 dark:border-slate-700/50 font-medium hover:shadow-[0_0_15px_rgba(139,92,246,0.5)]"
             >
               Сегодня
             </Button>
@@ -440,7 +449,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                 className={cn(
                   "px-4 h-full transition-all duration-200 font-medium text-sm",
                   view === "week"
-                    ? "bg-primary text-primary-foreground shadow-inner"
+                    ? "bg-primary text-primary-foreground shadow-inner shadow-[0_0_10px_rgba(139,92,246,0.5)_inset]"
                     : "bg-white/90 dark:bg-zinc-800/90 text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-zinc-800 hover:text-primary",
                 )}
               >
@@ -451,7 +460,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                 className={cn(
                   "px-4 h-full transition-all duration-200 font-medium text-sm",
                   view === "month"
-                    ? "bg-primary text-primary-foreground shadow-inner"
+                    ? "bg-primary text-primary-foreground shadow-inner shadow-[0_0_10px_rgba(139,92,246,0.5)_inset]"
                     : "bg-white/90 dark:bg-zinc-800/90 text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-zinc-800 hover:text-primary",
                 )}
               >
