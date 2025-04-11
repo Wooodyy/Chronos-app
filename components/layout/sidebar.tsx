@@ -110,55 +110,52 @@ export function Sidebar() {
       <div className="relative flex-1 overflow-y-auto py-6 px-4 z-10 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
         <nav className="space-y-2">
           {menuItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
+        const Icon = item.icon
+        const isActive = pathname === item.href
 
-            return (
-              <Link key={item.href} href={item.href}>
-                <div
-                  className={cn(
-                    "relative flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200",
-                    isCollapsed ? "justify-center" : "",
-                    isActive
-                      ? "text-primary dark:text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                    "hover:scale-[1.03] hover:bg-primary/5 active:scale-[0.98]",
-                  )}
-                >
-                  {/* Active indicator - статический, без анимации */}
-                  {isActive && (
-                    <div className="absolute inset-0 rounded-xl bg-primary/10 dark:bg-primary/20 z-0 shadow-[0_0_20px_1px_rgba(139,92,246,0.2),inset_0_0_8px_rgba(139,92,246,0.1)]" />
-                  )}
+        return (
+          <Link key={item.href} href={item.href}>
+            <div
+          className={cn(
+            "relative flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200",
+            isCollapsed ? "justify-center" : "",
+            isActive
+              ? "text-primary dark:text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground",
+            "hover:scale-[1.03] hover:bg-primary/5 active:scale-[0.98]",
+          )}
+            >
+          {/* Active indicator - статический, без анимации */}
+          {isActive && (
+            <div className="absolute inset-0 rounded-xl bg-primary/10 dark:bg-primary/20 z-0 shadow-[0_0_20px_1px_rgba(139,92,246,0.2),inset_0_0_8px_rgba(139,92,246,0.1)]" />
+          )}
 
-                  {/* Icon */}
-                  <div className="relative z-10">
-                    <Icon
-                      className={cn(
-                        "h-5 w-5 transition-colors",
-                        isActive
-                          ? "text-primary dark:text-primary-foreground"
-                          : "text-muted-foreground group-hover:text-foreground",
-                      )}
-                    />
-                    {isActive && (
-                      <div className="absolute inset-0 rounded-full shadow-[0_0_8px_2px_rgba(139,92,246,0.4)]" />
-                    )}
-                  </div>
+          {/* Icon */}
+          <div className="relative z-10">
+            <Icon
+              className={cn(
+            "h-5 w-5 transition-colors",
+            isActive
+              ? "text-primary dark:text-primary-foreground"
+              : "text-muted-foreground group-hover:text-foreground",
+              )}
+            />
+          </div>
 
-                  {/* Text label */}
-                  {!isCollapsed && (
-                    <span
-                      className={cn(
-                        "text-sm font-medium relative z-10 transition-opacity duration-200",
-                        isActive && "font-semibold",
-                      )}
-                    >
-                      {item.name}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            )
+          {/* Text label */}
+          {!isCollapsed && (
+            <span
+              className={cn(
+            "text-sm font-medium relative z-10 transition-opacity duration-200",
+            isActive && "font-semibold",
+              )}
+            >
+              {item.name}
+            </span>
+          )}
+            </div>
+          </Link>
+        )
           })}
         </nav>
       </div>

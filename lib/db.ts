@@ -110,7 +110,7 @@ export async function registerUser(userData: {
         login: newUser.login,
         name: `${newUser.first_name} ${newUser.last_name}`.trim(),
         firstName: newUser.first_name,
-        lastName: newUser.last_name,
+        lastName: newUser.lastName,
         email: newUser.email,
         role: newUser.role,
         avatar: null,
@@ -148,7 +148,7 @@ export async function getUserById(userId: number) {
       login: user.login,
       name: `${user.first_name} ${user.last_name}`.trim(),
       firstName: user.first_name,
-      lastName: user.last_name,
+      lastName: user.lastName,
       email: user.email,
       role: user.role,
       avatar: avatarBase64 ? `data:image/jpeg;base64,${avatarBase64}` : null,
@@ -202,7 +202,7 @@ export async function updateUser(
         login: user.login,
         name: `${user.first_name} ${user.last_name}`.trim(),
         firstName: user.first_name,
-        lastName: user.last_name,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         avatar: avatarBase64 ? `data:image/jpeg;base64,${avatarBase64}` : null,
@@ -210,8 +210,44 @@ export async function updateUser(
       },
     }
   } catch (error) {
-    console.error("Ошибка обновления пользователя:", error)
+    console.error("Ошибка обновлеия пользователя:", error)
     return { success: false, message: "Ошибка при обновлении пользователя" }
+  }
+}
+
+// Функция для обновления пароля пользователя
+export async function updateUserPassword(
+  userId: number,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    // Получаем текущий хеш пароля пользователя
+    const userResult = await pool.query("SELECT password_hash FROM users WHERE id = $1", [userId])
+
+    if (userResult.rows.length === 0) {
+      return { success: false, message: "Пользователь не найден" }
+    }
+
+    const currentPasswordHash = userResult.rows[0].password_hash
+
+    // Проверяем, совпадает ли текущий пароль
+    const isPasswordValid = await bcrypt.compare(currentPassword, currentPasswordHash)
+
+    if (!isPasswordValid) {
+      return { success: false, message: "Текущий пароль указан неверно" }
+    }
+
+    // Хешируем новый пароль
+    const newPasswordHash = await bcrypt.hash(newPassword, 10)
+
+    // Обновляем пароль в базе данных
+    await pool.query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", [newPasswordHash, userId])
+
+    return { success: true }
+  } catch (error) {
+    console.error("Ошибка при обновлении пароля:", error)
+    return { success: false, message: "Ошибка при обновлении пароля" }
   }
 }
 
@@ -225,7 +261,7 @@ export async function updateUserAvatar(userId: number, avatarBuffer: Buffer): Pr
 
     return result.rowCount === 1
   } catch (error) {
-    console.error("Ошибка при обновлении аватара:", error)
+    console.error("��шибка при обновлении аватара:", error)
     return false
   }
 }
@@ -547,4 +583,3 @@ export async function updateNote(
     return false
   }
 }
-
