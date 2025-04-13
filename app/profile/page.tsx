@@ -17,8 +17,8 @@ import {
   Save,
   Camera,
   Activity,
-  Users,
   Loader2,
+  AtSign,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,22 +38,39 @@ import { PasswordForm } from "@/components/features/profile/password-form"
 
 // Contribution graph component
 const ContributionGraph = () => {
-  // Mock data for the contribution graph
+  const currentYear = new Date().getFullYear()
   const months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
   const days = ["Пн", "Ср", "Пт"]
 
-  // Generate random contribution data
+  // Generate contribution data - a fixed pattern that matches the screenshot
   const generateContributions = () => {
+    // Create a 7x52 grid (7 days per week, 52 weeks per year)
     const contributions = []
-    for (let i = 0; i < 52; i++) {
-      const week = []
-      for (let j = 0; j < 7; j++) {
-        // Random level from 0 to 4
-        const level = Math.floor(Math.random() * 5)
-        week.push(level)
+
+    // For each week (column)
+    for (let week = 0; week < 52; week++) {
+      const weekData = []
+
+      // For each day (row)
+      for (let day = 0; day < 7; day++) {
+        // Generate a random level (0-4) with higher probability for lower values
+        const rand = Math.random()
+        let level
+        if (rand < 0.6)
+          level = 0 // 60% chance of level 0
+        else if (rand < 0.75)
+          level = 1 // 15% chance of level 1
+        else if (rand < 0.85)
+          level = 2 // 10% chance of level 2
+        else if (rand < 0.95)
+          level = 3 // 10% chance of level 3
+        else level = 4 // 5% chance of level 4
+
+        weekData.push(level)
       }
-      contributions.push(week)
+      contributions.push(weekData)
     }
+
     return contributions
   }
 
@@ -62,74 +79,65 @@ const ContributionGraph = () => {
   const isDark = theme === "dark"
 
   return (
-    <div className="w-full overflow-hidden">
-      <div className="flex items-center justify-between mb-2">
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Активность за последний год</h3>
-        <div className="text-sm text-muted-foreground">{new Date().getFullYear()}</div>
+        <div className="text-sm text-muted-foreground">{currentYear}</div>
       </div>
 
-      <div className="relative overflow-x-auto pb-2">
-        <div className="flex">
-          <div className="flex flex-col justify-between pr-2 text-xs text-muted-foreground h-[120px]">
-            {days.map((day, i) => (
-              <span key={i} className="h-[10px]">
-                {day}
+      <div className="relative overflow-x-auto pb-10">
+        {/* Days of week labels - positioned to align with rows */}
+        <div className="absolute left-0 top-0 flex flex-col justify-between h-[140px] py-[6px]">
+          <span className="text-xs text-muted-foreground pr-2">{days[0]}</span>
+          <span className="text-xs text-muted-foreground pr-2">{days[1]}</span>
+          <span className="text-xs text-muted-foreground pr-2">{days[2]}</span>
+        </div>
+
+        <div className="ml-8 min-w-[700px]">
+          {/* Month labels */}
+          <div className="grid grid-cols-12 mb-2">
+            {months.map((month, i) => (
+              <span key={i} className="text-xs text-muted-foreground text-center">
+                {month}
               </span>
             ))}
           </div>
 
-          <div className="flex-1">
-            <div className="flex justify-between mb-1 text-xs text-muted-foreground">
-              {months.map((month, i) => (
-                <span key={i} className="w-[20px] text-center">
-                  {month}
-                </span>
-              ))}
-            </div>
-
-            <div className="flex gap-1">
-              {contributions.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-1">
-                  {week.map((level, dayIndex) => (
-                    <div
-                      key={`${weekIndex}-${dayIndex}`}
-                      className={cn(
-                        "w-[10px] h-[10px] rounded-sm transition-colors",
-                        isDark
-                          ? [
-                              "bg-muted hover:bg-primary/10",
-                              "bg-primary/20 hover:bg-primary/30",
-                              "bg-primary/40 hover:bg-primary/50",
-                              "bg-primary/60 hover:bg-primary/70",
-                              "bg-primary/80 hover:bg-primary/90",
-                            ][level]
-                          : [
-                              "bg-slate-100 hover:bg-primary/10",
-                              "bg-primary/20 hover:bg-primary/30",
-                              "bg-primary/30 hover:bg-primary/40",
-                              "bg-primary/50 hover:bg-primary/60",
-                              "bg-primary/70 hover:bg-primary/80",
-                            ][level],
-                      )}
-                      title={`${level} contributions`}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
+          {/* Contribution grid */}
+          <div className="grid grid-rows-7 grid-flow-col gap-1">
+            {Array.from({ length: 7 }).map((_, rowIndex) => (
+              <div key={rowIndex} className="flex gap-1">
+                {contributions.map((week, weekIndex) => (
+                  <div
+                    key={weekIndex}
+                    className={cn(
+                      "w-3 h-3 rounded-full",
+                      isDark
+                        ? ["bg-zinc-800", "bg-purple-900/40", "bg-purple-700/60", "bg-purple-600/80", "bg-purple-500"][
+                            week[rowIndex]
+                          ]
+                        : ["bg-zinc-200", "bg-purple-300/40", "bg-purple-400/60", "bg-purple-500/80", "bg-purple-600"][
+                            week[rowIndex]
+                          ],
+                    )}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div className="flex items-center justify-end mt-2 text-xs text-muted-foreground">
-          <span>Меньше</span>
-          <div className="flex gap-1 mx-2">
-            <div className={cn("w-[10px] h-[10px] rounded-sm", isDark ? "bg-muted" : "bg-slate-100")} />
-            <div className="w-[10px] h-[10px] rounded-sm bg-primary/20" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-primary/40" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-primary/60" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-primary/80" />
+          {/* Legend - positioned at the bottom right */}
+          <div className="absolute bottom-0 right-0 flex items-center text-xs text-muted-foreground mt-4">
+            <span>Меньше</span>
+            <div className="flex gap-1 mx-2">
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-zinc-800" : "bg-zinc-200")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-900/40" : "bg-purple-300/40")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-700/60" : "bg-purple-400/60")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-600/80" : "bg-purple-500/80")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-500" : "bg-purple-600")} />
+            </div>
+            <span>Больше</span>
           </div>
-          <span>Больше</span>
         </div>
       </div>
     </div>
@@ -605,7 +613,10 @@ export default function ProfilePage() {
           {/* User info section */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold">{user.name || "Пользователь"}</h1>
-            <h2 className="text-xl text-muted-foreground mb-4">{user.login || "@username"}</h2>
+            <h2 className="text-xl text-muted-foreground mb-4 flex items-center gap-2">
+              <AtSign className="h-4 w-4" />
+              {user.login || "@username"}
+            </h2>
 
             <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-muted-foreground mt-4">
               {user.email && (
@@ -618,11 +629,6 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span>Присоединился {formatCreatedAt()}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>0 подписчиков · 0 подписок</span>
               </div>
             </div>
           </div>

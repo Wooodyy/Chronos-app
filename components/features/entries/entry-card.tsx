@@ -33,6 +33,34 @@ const typeIcons = {
   note: FileText,
 }
 
+// Simplified color mapping for each entry type
+const typeColors = {
+  task: {
+    glow: "0 0 15px rgba(59, 130, 246, 0.4)",
+    iconGlow: "0 0 8px rgba(59, 130, 246, 0.6)",
+    bg: "bg-blue-100",
+    text: "text-blue-600",
+    darkBg: "dark:bg-blue-900/30",
+    darkText: "dark:text-blue-400",
+  },
+  reminder: {
+    glow: "0 0 15px rgba(245, 158, 11, 0.4)",
+    iconGlow: "0 0 8px rgba(245, 158, 11, 0.6)",
+    bg: "bg-amber-100",
+    text: "text-amber-600",
+    darkBg: "dark:bg-amber-900/30",
+    darkText: "dark:text-amber-400",
+  },
+  note: {
+    glow: "0 0 15px rgba(16, 185, 129, 0.4)",
+    iconGlow: "0 0 8px rgba(16, 185, 129, 0.6)",
+    bg: "bg-emerald-100",
+    text: "text-emerald-600",
+    darkBg: "dark:bg-emerald-900/30",
+    darkText: "dark:text-emerald-400",
+  },
+}
+
 const priorityColors = {
   low: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200",
   medium: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200",
@@ -100,6 +128,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
   const [isAnimating, setIsAnimating] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { showNotification } = useNotification()
+  const typeColor = typeColors[entry.type]
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -181,28 +210,35 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
     >
       <Card
         className={cn(
-          "overflow-hidden border transition-all duration-300 hover:shadow-lg h-[140px]",
-          isHovered ? "translate-y-[-2px]" : "shadow-sm",
+          "overflow-hidden border transition-all duration-300 h-[150px] relative",
+          isHovered ? "translate-y-[-2px]" : "",
           isCompleted && entry.type === "task" ? "bg-muted/30" : "bg-card",
         )}
+        style={{
+          boxShadow: typeColor.glow,
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex p-4 gap-3 h-full">
           {/* Left column with icon and checkbox */}
           <div className="flex flex-col items-center gap-3">
-            {/* Task type icon */}
+            {/* Task type icon with glow */}
             <div
               className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full",
-                entry.type === "task"
-                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                  : entry.type === "reminder"
-                    ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
-                    : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+                "flex h-6 w-6 items-center justify-center rounded-full",
+                typeColor.bg,
+                typeColor.text,
+                typeColor.darkBg,
+                typeColor.darkText,
+                isHovered ? "scale-110" : "",
               )}
+              style={{
+                boxShadow: typeColor.iconGlow,
+                transition: "transform 0.3s ease",
+              }}
             >
-              <Icon className="h-3 w-3" />
+              <Icon className="h-3.5 w-3.5" />
             </div>
 
             {/* Checkbox for tasks - now vertically centered */}
@@ -217,14 +253,16 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                       className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12"
                     />
                   ) : isCompleted ? (
-                    <div className="w-6 h-6 rounded-sm bg-blue-500 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-sm bg-blue-500 flex items-center justify-center shadow-[0_0_8px_rgba(59,130,246,0.5)]">
                       <Check strokeWidth={5} className="h-4 w-4 text-white" />
                     </div>
                   ) : (
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-sm border-2 flex items-center justify-center transition-colors",
-                        isHovered ? "border-blue-500 bg-blue-100/50 dark:bg-blue-900/30" : "border-muted-foreground/30",
+                        "w-6 h-6 rounded-sm border-2 flex items-center justify-center transition-all",
+                        isHovered
+                          ? "border-blue-500 bg-blue-100/50 dark:bg-blue-900/30 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                          : "border-muted-foreground/30",
                       )}
                     />
                   )}
@@ -257,7 +295,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
 
               <p
                 className={cn(
-                  "text-sm text-muted-foreground truncate",
+                  "text-sm text-muted-foreground line-clamp-2",
                   isCompleted && entry.type === "task" ? "line-through" : "",
                 )}
               >
@@ -294,11 +332,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                 <div
                   className={cn(
                     "text-xs h-5 rounded-full px-2 flex items-center justify-center",
-                    entry.priority === "low"
-                      ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      : entry.priority === "medium"
-                        ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
-                        : "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+                    priorityColors[entry.priority],
                   )}
                 >
                   {priorityLabels[entry.priority]}
@@ -330,4 +364,3 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
     </motion.div>
   )
 }
-
