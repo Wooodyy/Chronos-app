@@ -157,7 +157,7 @@ export default function NewTaskPage() {
 
       <div className="flex-1 max-w-4xl mx-auto w-full">
         {/* Верхняя панель */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+        <div className="sticky top-0 z-30 flex items-center justify-between p-4 bg-background/95 backdrop-blur-md border-b shadow-sm">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
@@ -176,9 +176,12 @@ export default function NewTaskPage() {
             <Button
               variant="default"
               size="sm"
-              className="h-9 px-4 gap-1"
+              className="h-9 md:h-9 px-4 gap-1 bg-purple-600 hover:bg-purple-700 text-white font-medium"
               onClick={handleSubmit}
               disabled={isSaving || !title.trim()}
+              style={{
+                boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
+              }}
             >
               {isSaving ? (
                 <>
@@ -375,4 +378,3 @@ export default function NewTaskPage() {
     </div>
   )
 }
-

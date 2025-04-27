@@ -12,7 +12,7 @@ import {
   differenceInMinutes,
 } from "date-fns"
 import { ru } from "date-fns/locale"
-import { Bell, FileText, ListTodo, Clock, Check, AlertTriangle } from "lucide-react"
+import { Bell, FileText, ListTodo, Clock, Check, AlertTriangle, RefreshCw, Repeat, Calendar } from "lucide-react"
 import type { Entry } from "@/types/entry"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
@@ -61,6 +61,14 @@ const typeColors = {
   },
 }
 
+// Новые цвета для разных типов повторения
+const repeatTypeColors = {
+  none: "bg-secondary/30 text-white",
+  daily: "bg-purple-100 text-white dark:bg-purple-900/30 dark:white",
+  weekly: "bg-indigo-100 text-white dark:bg-indigo-900/30 dark:text-white",
+  monthly: "bg-cyan-100 text-white dark:bg-cyan-900/30 dark:text-white",
+}
+
 const priorityColors = {
   low: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200",
   medium: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200",
@@ -71,6 +79,21 @@ const priorityLabels = {
   low: "Низкий",
   medium: "Средний",
   high: "Высокий",
+}
+
+const repeatTypeLabels = {
+  none: "Не повторяется",
+  daily: "Ежедневно",
+  weekly: "Еженедельно",
+  monthly: "Ежемесячно",
+}
+
+// Иконки для разных типов повторения
+const repeatTypeIcons = {
+  none: Clock,
+  daily: Repeat,
+  weekly: RefreshCw,
+  monthly: Calendar,
 }
 
 // Function to calculate and format time remaining
@@ -188,7 +211,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
   const getEntryUrl = () => {
     // Get the current path to use as source
     const currentPath = window.location.pathname
-    const source = currentPath.includes("/notes") ? "notes" : currentPath.includes("/tasks") ? "tasks" : "dashboard"
+    const source = currentPath.includes("/notes") ? "notes" : currentPath.includes("/tasks") ? "tasks" : currentPath.includes("/reminders") ? "reminders" : "dashboard"
 
     switch (entry.type) {
       case "task":
@@ -201,6 +224,9 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
         return `/entries/${entry.id}?source=${source}`
     }
   }
+
+  // Получаем иконку для типа повторения
+  const RepeatIcon = entry.repeat_type ? repeatTypeIcons[entry.repeat_type] : Clock
 
   return (
     <motion.div
@@ -220,6 +246,11 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Время отображается в правом верхнем углу карточки */}
+        <div className="absolute top-2 right-3 text-sm font-medium text-muted-foreground">
+          {entry.time || format(entry.date, "HH:mm", { locale: ru })}
+        </div>
+
         <div className="flex p-4 gap-3 h-full">
           {/* Left column with icon and checkbox */}
           <div className="flex flex-col items-center gap-3">
@@ -274,8 +305,8 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
           {/* Card content */}
           <Link href={getEntryUrl()} className="flex-grow min-w-0 flex flex-col justify-between h-full">
             <div className="flex flex-col">
-              {/* Header with title and time */}
-              <div className="flex items-start justify-between gap-2 mb-2">
+              {/* Header with title */}
+              <div className="mb-2">
                 <h3
                   className={cn(
                     "text-base font-medium leading-tight truncate",
@@ -284,13 +315,6 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                 >
                   {entry.title}
                 </h3>
-
-                {/* Time badge - moved to right side */}
-                <div className="flex-shrink-0">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    {format(entry.date, "HH:mm", { locale: ru })}
-                  </div>
-                </div>
               </div>
 
               <p
@@ -336,6 +360,19 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                   )}
                 >
                   {priorityLabels[entry.priority]}
+                </div>
+              )}
+
+              {/* Тип повторения с новыми цветами и иконками */}
+              {entry.type === "reminder" && entry.repeat_type && (
+                <div
+                  className={cn(
+                    "text-xs h-5 rounded-full px-2 flex items-center justify-center gap-1",
+                    repeatTypeColors[entry.repeat_type],
+                  )}
+                >
+                  <RepeatIcon className="h-3 w-3" />
+                  {repeatTypeLabels[entry.repeat_type]}
                 </div>
               )}
 

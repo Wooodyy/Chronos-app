@@ -261,7 +261,7 @@ export async function updateUserAvatar(userId: number, avatarBuffer: Buffer): Pr
 
     return result.rowCount === 1
   } catch (error) {
-    console.error("��шибка при обновлении аватара:", error)
+    console.error("Ошибка при обновлении аватара:", error)
     return false
   }
 }
@@ -580,6 +580,201 @@ export async function updateNote(
     return result.rowCount !== null && result.rowCount > 0
   } catch (error) {
     console.error("Ошибка обновления заметки:", error)
+    return false
+  }
+}
+
+// Add these functions to the existing lib/db.ts file after the note-related functions
+
+// Функция для получения всех напоминаний пользователя
+export async function getUserReminders(login: string): Promise<Entry[]> {
+  try {
+    const result = await pool.query(
+      `SELECT id, login, title, description, priority, date, time, 
+              repeat_type, repeat_days, repeat_until, tags, created_at
+       FROM reminders 
+       WHERE login = $1 
+       ORDER BY date ASC, time ASC`,
+      [login],
+    )
+
+    // Преобразуем данные в формат Entry
+    return result.rows.map((reminder) => ({
+      id: reminder.id.toString(),
+      title: reminder.title,
+      description: reminder.description || "",
+      date: new Date(reminder.date),
+      type: "reminder",
+      priority: reminder.priority,
+      tags: reminder.tags,
+      time: reminder.time ? reminder.time.substring(0, 5) : undefined, // Format as HH:MM
+      repeat_type: reminder.repeat_type,
+      repeat_days: reminder.repeat_days,
+      repeat_until: reminder.repeat_until ? new Date(reminder.repeat_until) : undefined,
+    }))
+  } catch (error) {
+    console.error("Ошибка получения напоминаний:", error)
+    return []
+  }
+}
+
+// Функция для получения напоминания по ID
+export async function getReminderById(id: string): Promise<Entry | null> {
+  try {
+    const result = await pool.query(
+      `SELECT id, login, title, description, priority, date, time, 
+              repeat_type, repeat_days, repeat_until, tags, created_at
+       FROM reminders 
+       WHERE id = $1`,
+      [id],
+    )
+
+    if (result.rows.length === 0) {
+      return null
+    }
+
+    const reminder = result.rows[0]
+
+    // Преобразуем данные в формат Entry
+    return {
+      id: reminder.id.toString(),
+      title: reminder.title,
+      description: reminder.description || "",
+      date: new Date(reminder.date),
+      type: "reminder",
+      priority: reminder.priority,
+      tags: reminder.tags,
+      time: reminder.time ? reminder.time.substring(0, 5) : undefined,
+      repeat_type: reminder.repeat_type,
+      repeat_days: reminder.repeat_days,
+      repeat_until: reminder.repeat_until ? new Date(reminder.repeat_until) : undefined,
+    }
+  } catch (error) {
+    console.error("Ошибка получения напоминания по ID:", error)
+    return null
+  }
+}
+
+// Функция для создания нового напоминания
+export async function createReminder(reminderData: {
+  login: string
+  title: string
+  description?: string
+  priority?: string
+  date: Date
+  time?: string
+  repeat_type: string
+  repeat_days?: number[]
+  repeat_until?: Date
+  tags?: string[]
+}): Promise<{ success: boolean; reminder?: Entry; message?: string }> {
+  try {
+    const { login, title, description, priority, date, time, repeat_type, repeat_days, repeat_until, tags } =
+      reminderData
+
+    // Проверяем, существует ли пользователь с таким логином
+    const userCheck = await pool.query("SELECT id FROM users WHERE login = $1", [login])
+    if (userCheck.rows.length === 0) {
+      return { success: false, message: "Пользователь не найден" }
+    }
+
+    // Вставляем новое напоминание
+    const result = await pool.query(
+      `INSERT INTO reminders 
+      (login, title, description, priority, date, time, repeat_type, repeat_days, repeat_until, tags, created_at, updated_at) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) 
+      RETURNING id, login, title, description, priority, date, time, repeat_type, repeat_days, repeat_until, tags, created_at`,
+      [
+        login,
+        title,
+        description || "",
+        priority || "medium",
+        date,
+        time,
+        repeat_type,
+        repeat_days,
+        repeat_until,
+        tags || [],
+      ],
+    )
+
+    if (result.rows.length === 0) {
+      return { success: false, message: "Ошибка при создании напоминания" }
+    }
+
+    const reminder = result.rows[0]
+
+    // Преобразуем данные в формат Entry
+    const newReminder: Entry = {
+      id: reminder.id.toString(),
+      title: reminder.title,
+      description: reminder.description,
+      date: new Date(reminder.date),
+      type: "reminder",
+      priority: reminder.priority,
+      tags: reminder.tags,
+      time: reminder.time ? reminder.time.substring(0, 5) : undefined,
+      repeat_type: reminder.repeat_type,
+      repeat_days: reminder.repeat_days,
+      repeat_until: reminder.repeat_until ? new Date(reminder.repeat_until) : undefined,
+    }
+
+    return { success: true, reminder: newReminder }
+  } catch (error) {
+    console.error("Ошибка создания напоминания:", error)
+    return { success: false, message: "Ошибка при создании напоминания" }
+  }
+}
+
+// Функция для удаления напоминания
+export async function deleteReminder(id: string): Promise<boolean> {
+  try {
+    const result = await pool.query("DELETE FROM reminders WHERE id = $1 RETURNING id", [id])
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка удаления напоминания:", error)
+    return false
+  }
+}
+
+// Функция для обновления напоминания
+export async function updateReminder(
+  id: string,
+  reminderData: {
+    title?: string
+    description?: string
+    priority?: string
+    date?: Date
+    time?: string
+    repeat_type?: string
+    repeat_days?: number[]
+    repeat_until?: Date
+    tags?: string[]
+  },
+): Promise<boolean> {
+  try {
+    const { title, description, priority, date, time, repeat_type, repeat_days, repeat_until, tags } = reminderData
+
+    const result = await pool.query(
+      `UPDATE reminders 
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           priority = COALESCE($3, priority),
+           date = COALESCE($4, date),
+           time = COALESCE($5, time),
+           repeat_type = COALESCE($6, repeat_type),
+           repeat_days = COALESCE($7, repeat_days),
+           repeat_until = COALESCE($8, repeat_until),
+           tags = COALESCE($9, tags),
+           updated_at = NOW()
+       WHERE id = $10
+       RETURNING id`,
+      [title, description, priority, date, time, repeat_type, repeat_days, repeat_until, tags, id],
+    )
+
+    return result.rowCount !== null && result.rowCount > 0
+  } catch (error) {
+    console.error("Ошибка обновления напоминания:", error)
     return false
   }
 }

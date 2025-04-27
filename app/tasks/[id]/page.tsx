@@ -333,7 +333,7 @@ export default function TaskPage() {
 
       <div className="flex-1 max-w-4xl mx-auto w-full">
         {/* Верхняя панель */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+        <div className="sticky top-0 z-30 flex items-center justify-between p-4 bg-background/95 backdrop-blur-md border-b shadow-sm">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -353,13 +353,13 @@ export default function TaskPage() {
             </Badge>
 
             {lastSaved && (
-              <span className="text-xs text-muted-foreground ml-2">
+              <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
                 Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
               </span>
             )}
 
             {isSaving && (
-              <div className="flex items-center text-xs text-muted-foreground ml-2">
+              <div className="flex items-center text-xs text-muted-foreground ml-2 hidden md:flex">
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
                 Сохранение...
               </div>
@@ -368,7 +368,16 @@ export default function TaskPage() {
 
           <div className="flex items-center gap-2">
             {isEdited && (
-              <Button variant="default" size="sm" className="h-9 px-4 gap-1" onClick={handleSave} disabled={isSaving}>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-9 md:h-9 px-4 gap-1 bg-purple-600 hover:bg-purple-700 text-white font-medium"
+                onClick={handleSave}
+                disabled={isSaving}
+                style={{
+                  boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
+                }}
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -383,28 +392,9 @@ export default function TaskPage() {
               </Button>
             )}
 
-            <Button
-              variant={isCompleted ? "default" : "outline"}
-              size="sm"
-              className="h-9 px-4 gap-1"
-              onClick={toggleComplete}
-            >
-              {isCompleted ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Выполнено
-                </>
-              ) : (
-                <>
-                  <Circle className="h-4 w-4" />
-                  Выполнить
-                </>
-              )}
-            </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 flex items-center justify-center">
                   <MoreHorizontal className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -440,6 +430,26 @@ export default function TaskPage() {
 
           {/* Метаданные */}
           <div className="flex flex-wrap gap-4">
+            {/* Статус выполнения - перемещен сюда из верхней панели */}
+            <Button
+              variant={isCompleted ? "default" : "outline"}
+              size="sm"
+              className="gap-2 h-8"
+              onClick={toggleComplete}
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Выполнено
+                </>
+              ) : (
+                <>
+                  <Circle className="h-3.5 w-3.5" />
+                  Выполнить
+                </>
+              )}
+            </Button>
+
             {/* Дата */}
             <Popover>
               <PopoverTrigger asChild>
@@ -619,4 +629,3 @@ export default function TaskPage() {
     </div>
   )
 }
-

@@ -370,7 +370,7 @@ export default function ReminderPage() {
 
       <div className="flex-1 max-w-4xl mx-auto w-full">
         {/* Верхняя панель */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+        <div className="sticky top-0 z-30 flex items-center justify-between p-4 bg-background/95 backdrop-blur-md border-b shadow-sm">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -390,13 +390,13 @@ export default function ReminderPage() {
             </Badge>
 
             {lastSaved && (
-              <span className="text-xs text-muted-foreground ml-2">
+              <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
                 Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
               </span>
             )}
 
             {isSaving && (
-              <div className="flex items-center text-xs text-muted-foreground ml-2">
+              <div className="flex items-center text-xs text-muted-foreground ml-2 hidden md:flex">
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
                 Сохранение...
               </div>
@@ -408,7 +408,7 @@ export default function ReminderPage() {
               <Button
                 variant="default"
                 size="sm"
-                className="h-9 px-4 gap-1 bg-purple-600 hover:bg-purple-700"
+                className="h-9 md:h-9 px-4 gap-1 bg-purple-600 hover:bg-purple-700 text-white font-medium"
                 onClick={handleSave}
                 disabled={isSaving}
                 style={{
@@ -431,7 +431,7 @@ export default function ReminderPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 flex items-center justify-center">
                   <MoreHorizontal className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
