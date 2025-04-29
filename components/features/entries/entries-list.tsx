@@ -67,7 +67,7 @@ export function EntriesList({ entries, showDate = false, title }: EntriesListPro
               <h3 className="text-lg font-medium">{format(new Date(date), "d MMMM", { locale: ru })}</h3>
             </div>
           )}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <AnimatePresence mode="popLayout">
               {dateEntries.map((entry, index) => (
                 <EntryCard
@@ -96,4 +96,3 @@ export function EntriesList({ entries, showDate = false, title }: EntriesListPro
     </div>
   )
 }
-

@@ -61,12 +61,12 @@ const typeColors = {
   },
 }
 
-// Новые цвета для разных типов повторения
+// Новые цвета для разных типов повторения - все в бирюзовом цвете
 const repeatTypeColors = {
-  none: "bg-secondary/30 text-white",
-  daily: "bg-purple-100 text-white dark:bg-purple-900/30 dark:white",
-  weekly: "bg-indigo-100 text-white dark:bg-indigo-900/30 dark:text-white",
-  monthly: "bg-cyan-100 text-white dark:bg-cyan-900/30 dark:text-white",
+  none: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
+  daily: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
+  weekly: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
+  monthly: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
 }
 
 const priorityColors = {
@@ -211,7 +211,13 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
   const getEntryUrl = () => {
     // Get the current path to use as source
     const currentPath = window.location.pathname
-    const source = currentPath.includes("/notes") ? "notes" : currentPath.includes("/tasks") ? "tasks" : currentPath.includes("/reminders") ? "reminders" : "dashboard"
+    const source = currentPath.includes("/notes")
+      ? "notes"
+      : currentPath.includes("/tasks")
+        ? "tasks"
+        : currentPath.includes("/reminders")
+          ? "reminders"
+          : "dashboard"
 
     switch (entry.type) {
       case "task":
@@ -363,7 +369,7 @@ export function EntryCard({ entry, index = 0, onTaskComplete }: EntryCardProps) 
                 </div>
               )}
 
-              {/* Тип повторения с новыми цветами и иконками */}
+              {/* Тип повторения с бирюзовыми цветами */}
               {entry.type === "reminder" && entry.repeat_type && (
                 <div
                   className={cn(

@@ -27,7 +27,9 @@ export function AddEntryButton() {
 
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <Button className="gap-2 relative z-50">
+          <Button className="gap-2 relative z-50" style={{
+              boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
+            }}>
             <Plus className="h-4 w-4" />
             Создать
           </Button>
@@ -40,7 +42,7 @@ export function AddEntryButton() {
             }}
             className="flex items-center gap-2 py-2 cursor-pointer"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 aspect-square">
               <FileText className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="flex flex-col">
@@ -56,7 +58,7 @@ export function AddEntryButton() {
             }}
             className="flex items-center gap-2 py-2 cursor-pointer"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 aspect-square">
               <ListTodo className="h-4 w-4 text-blue-500" />
             </div>
             <div className="flex flex-col">
@@ -72,7 +74,7 @@ export function AddEntryButton() {
             }}
             className="flex items-center gap-2 py-2 cursor-pointer"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 aspect-square">
               <Bell className="h-4 w-4 text-amber-500" />
             </div>
             <div className="flex flex-col">

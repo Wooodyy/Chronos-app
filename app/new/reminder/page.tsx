@@ -2,184 +2,70 @@
 
 import type React from "react"
 
-import { useParams, useRouter } from "next/navigation"
+import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Bell,
-  Trash2,
-  Loader2,
-  Tag,
-  Flag,
-  MoreHorizontal,
-  Plus,
-  Save,
-  RefreshCw,
-} from "lucide-react"
+import { ArrowLeft, Bell, Calendar, Clock, Flag, Tag, Plus, Save, Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { useState, useEffect, useRef } from "react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import type { Entry, PriorityLevel, RepeatType } from "@/types/entry"
+import { useAuth } from "@/contexts/auth-context"
+import type { PriorityLevel, RepeatType } from "@/types/entry"
 import { useNotification } from "@/components/ui/notification"
 
-export default function ReminderPage() {
+export default function NewReminderPage() {
   const router = useRouter()
-  const params = useParams()
-  const [reminder, setReminder] = useState<Entry | null>(null)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const { showNotification } = useNotification()
 
-  // Состояния для редактируемых полей
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<PriorityLevel>("medium")
-  const [date, setDate] = useState<Date | null>(null)
-  const [time, setTime] = useState<string>("")
+  const [date, setDate] = useState<Date>(new Date())
+  const [time, setTime] = useState<string>(format(new Date(), "HH:mm"))
   const [repeatType, setRepeatType] = useState<RepeatType>("none")
   const [repeatDays, setRepeatDays] = useState<number[]>([])
   const [repeatUntil, setRepeatUntil] = useState<Date | null>(null)
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
 
-  // Состояние для отслеживания изменений
-  const [isEdited, setIsEdited] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Refs для элементов редактирования
   const titleRef = useRef<HTMLInputElement>(null)
 
-  // Добавляем использование хука в компоненте
-  const { showNotification } = useNotification()
-
-  const [source, setSource] = useState("dashboard")
-
-  useEffect(() => {
-    // Get the source from URL query parameters
-    const urlParams = new URLSearchParams(window.location.search)
-    const sourceParam = urlParams.get("source")
-    if (sourceParam) {
-      setSource(sourceParam)
-    }
-  }, [])
-
-  useEffect(() => {
-    const fetchReminder = async () => {
-      setIsLoading(true)
-
-      try {
-        const response = await fetch(`/api/reminders/${params.id}`)
-        const data = await response.json()
-
-        if (data.success && data.reminder) {
-          setReminder(data.reminder)
-          initializeFormFields(data.reminder)
-        } else {
-          // Если не нашли напоминание, перенаправляем на список напоминаний
-          router.push("/reminders")
-        }
-      } catch (error) {
-        console.error("Error fetching reminder:", error)
-        router.push("/reminders")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchReminder()
-  }, [params.id, router])
-
-  // Функция для инициализации полей формы
-  const initializeFormFields = (reminder: Entry) => {
-    setTitle(reminder.title)
-    setDescription(reminder.description || "")
-
-    // Проверяем, что приоритет является допустимым значением
-    const reminderPriority = reminder.priority || "medium"
-    if (reminderPriority === "low" || reminderPriority === "medium" || reminderPriority === "high") {
-      setPriority(reminderPriority as PriorityLevel)
-    } else {
-      setPriority("medium")
-    }
-
-    // Устанавливаем дату
-    setDate(new Date(reminder.date))
-
-    // Устанавливаем время из поля time
-    setTime(reminder.time || format(new Date(reminder.date), "HH:mm"))
-
-    // Устанавливаем тип повторения
-    setRepeatType(reminder.repeat_type || "none")
-
-    // Устанавливаем дни повторения
-    setRepeatDays(reminder.repeat_days || [])
-
-    // Устанавливаем дату окончания повторения
-    setRepeatUntil(reminder.repeat_until ? new Date(reminder.repeat_until) : null)
-
-    // Устанавливаем теги
-    setTags(reminder.tags || [])
-
-    // Сбрасываем флаг изменений
-    setIsEdited(false)
-  }
-
   // Обработчики изменений полей
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
-    setIsEdited(true)
   }
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(e.target.value)
-    setIsEdited(true)
   }
 
   const handlePriorityChange = (value: PriorityLevel) => {
     setPriority(value)
-    setIsEdited(true)
   }
 
   const handleDateChange = (newDate: Date) => {
-    if (!date) return
-
     const updatedDate = new Date(date)
     updatedDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate())
-
     setDate(updatedDate)
-    setIsEdited(true)
   }
 
   const handleTimeChange = (newTime: string) => {
     setTime(newTime)
-    setIsEdited(true)
 
     // Обновляем дату с новым временем
-    if (date) {
-      const [hours, minutes] = newTime.split(":").map(Number)
-      const updatedDate = new Date(date)
-      updatedDate.setHours(hours, minutes)
-      setDate(updatedDate)
-    }
+    const [hours, minutes] = newTime.split(":").map(Number)
+    const updatedDate = new Date(date)
+    updatedDate.setHours(hours, minutes)
+    setDate(updatedDate)
   }
 
   const handleRepeatTypeChange = (value: RepeatType) => {
@@ -188,7 +74,6 @@ export default function ReminderPage() {
       setRepeatDays([])
       setRepeatUntil(null)
     }
-    setIsEdited(true)
   }
 
   const handleRepeatDayToggle = (day: number) => {
@@ -199,7 +84,6 @@ export default function ReminderPage() {
         return [...current, day].sort((a, b) => a - b)
       }
     })
-    setIsEdited(true)
   }
 
   const handleAddTag = () => {
@@ -207,14 +91,12 @@ export default function ReminderPage() {
       const updatedTags = [...tags, newTag.trim()]
       setTags(updatedTags)
       setNewTag("")
-      setIsEdited(true)
     }
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
     const updatedTags = tags.filter((tag) => tag !== tagToRemove)
     setTags(updatedTags)
-    setIsEdited(true)
   }
 
   const handleNewTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -224,30 +106,62 @@ export default function ReminderPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground">Загрузка...</p>
-      </div>
-    )
-  }
+  const handleSubmit = async () => {
+    if (!title.trim()) {
+      titleRef.current?.focus()
+      showNotification("Пожалуйста, введите заголовок напоминания", "error")
+      return
+    }
 
-  if (!reminder) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-          <Bell className="h-10 w-10 text-muted-foreground" />
-        </div>
-        <h2 className="text-2xl font-bold">Напоминание не найдено</h2>
-        <p className="text-muted-foreground text-center max-w-md">
-          Напоминание, которое вы ищете, не существует или было удалено.
-        </p>
-        <Button onClick={() => router.push("/reminders")} className="mt-4">
-          Вернуться к напоминаниям
-        </Button>
-      </div>
-    )
+    setIsSaving(true)
+    setError(null)
+
+    if (!user) {
+      setError("Вы должны быть авторизованы для создания напоминания")
+      setIsSaving(false)
+      return
+    }
+
+    try {
+      // Формируем данные для отправки
+      const reminderData = {
+        login: user.login,
+        title,
+        description,
+        date: date.toISOString(),
+        time: time,
+        priority,
+        repeat_type: repeatType,
+        repeat_days: repeatType === "weekly" ? repeatDays : null,
+        repeat_until: repeatUntil ? repeatUntil.toISOString() : null,
+        tags,
+      }
+
+      // Отправляем данные на сервер
+      const response = await fetch("/api/reminders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reminderData),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        showNotification("Напоминание успешно создано", "success")
+        router.push("/reminders")
+      } else {
+        setError(data.message || "Не удалось создать напоминание")
+        showNotification(data.message || "Не удалось создать напоминание", "error")
+      }
+    } catch (error) {
+      console.error("Error creating reminder:", error)
+      setError("Произошла ошибка при создании напоминания")
+      showNotification("Произошла ошибка при создании напоминания", "error")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const priorityColors = {
@@ -279,90 +193,6 @@ export default function ReminderPage() {
     { value: 0, label: "Вс" },
   ]
 
-  // Обновляем функцию handleDelete
-  const handleDelete = async () => {
-    try {
-      const response = await fetch(`/api/reminders/${reminder.id}`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        showNotification("Напоминание успешно удалено", "success")
-        router.push(source === "reminders" ? "/reminders" : "/dashboard")
-      } else {
-        showNotification("Не удалось удалить напоминание", "error")
-      }
-    } catch (error) {
-      console.error("Error deleting reminder:", error)
-      showNotification("Ошибка при удалении напоминания", "error")
-    }
-  }
-
-  // Функция для сохранения изменений
-  const handleSave = async () => {
-    if (!reminder || !date) return
-
-    setIsSaving(true)
-    setError(null)
-
-    try {
-      // Отправляем данные на сервер
-      const response = await fetch(`/api/reminders/${reminder.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          date: date.toISOString(),
-          time: time,
-          priority,
-          repeat_type: repeatType,
-          repeat_days: repeatType === "weekly" ? repeatDays : null,
-          repeat_until: repeatUntil ? repeatUntil.toISOString() : null,
-          tags,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!data.success) {
-        setError(data.message || "Не удалось обновить напоминание")
-        showNotification(data.message || "Не удалось обновить напоминание", "error")
-        setIsSaving(false)
-        return
-      } else {
-        // Обновляем локальное состояние
-        setReminder({
-          ...reminder,
-          title,
-          description,
-          date,
-          time,
-          priority,
-          repeat_type: repeatType,
-          repeat_days: repeatDays,
-          repeat_until: repeatUntil ?? undefined,
-          tags,
-        })
-        showNotification("Напоминание успешно обновлено", "success")
-      }
-
-      // Обновляем время последнего сохранения
-      setLastSaved(new Date())
-
-      // Сбрасываем флаг изменений
-      setIsEdited(false)
-    } catch (error) {
-      console.error("Error updating reminder:", error)
-      setError("Произошла ошибка при обновлении напоминания")
-      showNotification("Произошла ошибка при обновлении напоминания", "error")
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   return (
     <div className="flex flex-col min-h-full bg-background">
       {/* Mobile padding for header */}
@@ -370,14 +200,9 @@ export default function ReminderPage() {
 
       <div className="flex-1 max-w-4xl mx-auto w-full">
         {/* Верхняя панель */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+        <div className="sticky top-0 z-30 flex items-center justify-between p-4 bg-background/95 backdrop-blur-md border-b shadow-sm">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push(source === "reminders" ? "/reminders" : "/dashboard")}
-              className="rounded-full"
-            >
+            <Button variant="ghost" size="icon" onClick={() => router.push("/reminders")} className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
             </Button>
 
@@ -386,65 +211,33 @@ export default function ReminderPage() {
               className="ml-2 h-9 px-4 bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center"
             >
               <Bell className="h-4 w-4 mr-2" />
-              Напоминание
+              Новое напоминание
             </Badge>
-
-            {lastSaved && (
-              <span className="text-xs text-muted-foreground ml-2">
-                Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
-              </span>
-            )}
-
-            {isSaving && (
-              <div className="flex items-center text-xs text-muted-foreground ml-2">
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                Сохранение...
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
-            {isEdited && (
-              <Button
-                variant="default"
-                size="sm"
-                className="h-9 px-4 gap-1 bg-purple-600 hover:bg-purple-700"
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
-                }}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Сохранение...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Сохранить
-                  </>
-                )}
-              </Button>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="text-red-600 dark:text-red-400"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Удалить
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-9 md:h-9 px-4 gap-1 bg-purple-600 hover:bg-purple-700 text-white font-medium"
+              onClick={handleSubmit}
+              disabled={isSaving || !title.trim()}
+              style={{
+                boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
+              }}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Сохранить
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
@@ -472,7 +265,7 @@ export default function ReminderPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Calendar className="h-3.5 w-3.5" />
-                  {date ? format(date, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
+                  {format(date, "d MMMM yyyy", { locale: ru })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -482,9 +275,8 @@ export default function ReminderPage() {
                       <label className="text-sm font-medium">Дата</label>
                       <Input
                         type="date"
-                        value={date ? format(date, "yyyy-MM-dd") : ""}
+                        value={format(date, "yyyy-MM-dd")}
                         onChange={(e) => {
-                          if (!date) return
                           const [year, month, day] = e.target.value.split("-").map(Number)
                           const newDate = new Date(date)
                           newDate.setFullYear(year, month - 1, day)
@@ -671,8 +463,8 @@ export default function ReminderPage() {
             <Textarea
               value={description}
               onChange={handleDescriptionChange}
-              placeholder="Добавьте описание..."
               className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
+              placeholder="Добавьте описание..."
             />
           </div>
 
@@ -725,23 +517,6 @@ export default function ReminderPage() {
 
       {/* Mobile padding for bottom navigation */}
       <div className="h-20 md:hidden" />
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие нельзя отменить. Напоминание будет навсегда удалено из вашей учетной записи.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

@@ -110,6 +110,10 @@ export default function RemindersPage() {
     }))
   }, [filteredReminders])
 
+  const handleCreateReminder = () => {
+    router.push("/new/reminder")
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       {/* Mobile padding for header */}
@@ -126,10 +130,10 @@ export default function RemindersPage() {
 
           {/* Кнопка "Новое напоминание" скрыта на мобильных устройствах и имеет фиолетовый цвет со свечением */}
           <Button
-            onClick={() => router.push("/new/reminder")}
-            className="gap-2 hidden md:flex bg-purple-600 hover:bg-purple-700"
+            onClick={handleCreateReminder}
+            className="gap-2 hidden md:flex bg-amber-600 hover:bg-amber-700"
             style={{
-              boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
+              boxShadow: "0 0 15px rgba(217, 119, 6, 0.5)",
             }}
           >
             <Plus className="h-4 w-4" />
@@ -178,10 +182,10 @@ export default function RemindersPage() {
                 : "У вас пока нет напоминаний. Создайте новое напоминание, чтобы не забыть о важных событиях."}
             </p>
             <Button
-              onClick={() => router.push("/new/reminder")}
-              className="bg-purple-600 hover:bg-purple-700"
+              onClick={handleCreateReminder}
+              className="bg-amber-600 hover:bg-amber-700"
               style={{
-                boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
+              boxShadow: "0 0 15px rgba(217, 119, 6, 0.5)",
               }}
             >
               Создать напоминание
