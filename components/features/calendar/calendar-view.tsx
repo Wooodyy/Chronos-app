@@ -17,9 +17,14 @@ import {
   isSameDay,
   addMonths,
   isToday,
+  isBefore,
+  isAfter,
+  getDay,
+  differenceInCalendarWeeks,
+  differenceInCalendarMonths,
+  addWeeks,
 } from "date-fns"
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
-import { entries as staticEntries } from "@/data/entries"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Entry } from "@/types/entry"
 
@@ -27,6 +32,14 @@ interface CalendarViewProps {
   onDateSelect: (date: Date) => void
   selectedDate: Date
   dbTasks: Entry[]
+}
+
+// Функция для преобразования даты из строки или объекта Date
+const ensureDate = (dateInput: string | Date): Date => {
+  if (dateInput instanceof Date) {
+    return dateInput
+  }
+  return new Date(dateInput)
 }
 
 export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarViewProps) {
@@ -86,17 +99,78 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     [view, selectedDate],
   )
 
+  // Функция для проверки, должно ли повторяющееся напоминание отображаться на указанную дату
+  const shouldShowRecurringReminder = useCallback((reminder: Entry, date: Date): boolean => {
+    // Если это не напоминание или у него нет настроек повторения, проверяем только основную дату
+    if (reminder.type !== "reminder" || !reminder.repeat_type || reminder.repeat_type === "none") {
+      return isSameDay(ensureDate(reminder.date), date)
+    }
+
+    // Преобразуем дату напоминания в объект Date, если она не является им
+    const reminderDate = ensureDate(reminder.date)
+
+    // Проверяем, что дата не раньше начальной даты напоминания
+    if (isBefore(date, reminderDate)) {
+      return false
+    }
+
+    // Проверяем, что дата не позже даты окончания повторения (если она указана)
+    if (reminder.repeat_until && isAfter(date, ensureDate(reminder.repeat_until))) {
+      return false
+    }
+
+    // Проверяем по типу повторения
+    switch (reminder.repeat_type) {
+      case "daily":
+        // Для ежедневного повторения просто проверяем, что дата не раньше начальной
+        return true
+
+      case "weekly":
+        // Для еженедельного повторения проверяем день недели
+        if (reminder.repeat_days && reminder.repeat_days.length > 0) {
+          // Если указаны конкретные дни недели для повторения
+          const dayOfWeek = getDay(date) // 0 - воскресенье, 1 - понедельник, ...
+          return reminder.repeat_days.includes(dayOfWeek)
+        } else {
+          // Если дни недели не указаны, проверяем, что прошло целое число недель
+          const weekDiff = differenceInCalendarWeeks(date, reminderDate, { locale: ru })
+          return weekDiff >= 0 && isSameDay(addWeeks(reminderDate, weekDiff), date)
+        }
+
+      case "monthly":
+        // Для ежемесячного повторения проверяем число месяца
+        const reminderDay = reminderDate.getDate()
+        const dateDay = date.getDate()
+
+        // Проверяем, что это то же число месяца и прошло целое число месяцев
+        if (reminderDay === dateDay) {
+          const monthDiff = differenceInCalendarMonths(date, reminderDate)
+          return monthDiff >= 0
+        }
+        return false
+
+      default:
+        return isSameDay(reminderDate, date)
+    }
+  }, [])
+
   // Оптимизированная функция получения событий для дня
   const getEventsForDay = useCallback(
     (date: Date) => {
-      // Получаем напоминания и заметки из статического файла
-      const staticEvents = staticEntries.filter((entry) => isSameDay(entry.date, date))
-      // Получаем задачи из базы данных
-      const dbEvents = dbTasks.filter((entry) => isSameDay(entry.date, date))
-      // Объединяем события
-      return [...staticEvents, ...dbEvents]
+      // Получаем задачи и заметки, которые точно совпадают с датой
+      const regularEvents = dbTasks.filter(
+        (entry) => entry.type !== "reminder" && isSameDay(ensureDate(entry.date), date),
+      )
+
+      // Получаем напоминания, учитывая повторения
+      const reminderEvents = dbTasks.filter(
+        (entry) => entry.type === "reminder" && shouldShowRecurringReminder(entry, date),
+      )
+
+      // Объединяем все события
+      return [...regularEvents, ...reminderEvents]
     },
-    [dbTasks],
+    [dbTasks, shouldShowRecurringReminder],
   )
 
   // Мемоизированная функция для получения уникальных типов событий

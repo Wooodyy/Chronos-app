@@ -29,6 +29,13 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
 
       // Если пользователь авторизован и это не публичный маршрут
       if (user && !isPublicRoute) {
+        // Проверяем, были ли уже обновлены данные в текущей сессии
+        const dataRefreshedInSession = sessionStorage.getItem("data_refreshed_in_session") === "true"
+        if (dataRefreshedInSession) {
+          console.log("Data already refreshed in this session")
+          return
+        }
+
         // Устанавливаем флаг в sessionStorage, чтобы определить перезагрузку страницы
         const wasReloaded = sessionStorage.getItem("page_reloaded") === "true"
         sessionStorage.removeItem("page_reloaded")
@@ -40,6 +47,8 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
           setTimeout(() => {
             refreshData()
             pageReloadHandledRef.current = false
+            // Устанавливаем флаг, что данные были обновлены в текущей сессии
+            sessionStorage.setItem("data_refreshed_in_session", "true")
           }, 500)
         }
       }
@@ -102,4 +111,3 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
     </NotificationProvider>
   )
 }
-

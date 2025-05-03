@@ -39,6 +39,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const isUpdatingRef = useRef(false)
   const initialLoadDoneRef = useRef(false)
+  const dataLoadedInSessionRef = useRef(false)
+
+  // Функция для полной очистки всех данных из хранилищ
+  const clearAllStorageData = () => {
+    // Очищаем localStorage
+    localStorage.removeItem("chronos_user")
+
+    // Очищаем sessionStorage
+    sessionStorage.removeItem("user_data_refreshed")
+    sessionStorage.removeItem("sidebar_refreshed")
+    sessionStorage.removeItem("reminders_loaded")
+    sessionStorage.removeItem("page_reloaded")
+
+    // Очищаем все другие ключи, связанные с приложением
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith("chronos_")) {
+        localStorage.removeItem(key)
+      }
+    }
+
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i)
+      if (key && (key.includes("refreshed") || key.includes("loaded") || key.includes("chronos"))) {
+        sessionStorage.removeItem(key)
+      }
+    }
+  }
 
   // Функция для обновления данных пользователя из API
   const updateUserData = useCallback(async () => {
@@ -48,7 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isUpdatingRef.current = true
       // Добавляем параметр для предотвращения кэширования
       const timestamp = new Date().getTime()
-      const response = await fetch(`/api/users/${user.id}?t=${timestamp}`)
+      const response = await fetch(`/api/users/${user.id}?t=${timestamp}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      })
       const data = await response.json()
 
       if (data.success && data.user) {
@@ -72,9 +107,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshData = useCallback(async () => {
     if (!user?.id || isUpdatingRef.current) return
 
+    // Проверяем, были ли уже загружены данные в текущей сессии
+    if (dataLoadedInSessionRef.current) {
+      console.log("Data already loaded in this session, skipping refresh")
+      return
+    }
+
     try {
       isUpdatingRef.current = true
       await updateUserData()
+      // Устанавливаем флаг, что данные были загружены в текущей сессии
+      dataLoadedInSessionRef.current = true
     } catch (error) {
       console.error("Error refreshing data:", error)
     } finally {
@@ -86,6 +129,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Проверяем, есть ли сохраненный пользователь в localStorage
     const loadUser = async () => {
       if (initialLoadDoneRef.current) return
+
+      // Проверяем, были ли уже загружены данные в текущей сессии
+      const dataLoadedInSession = sessionStorage.getItem("user_data_loaded") === "true"
+      if (dataLoadedInSession) {
+        dataLoadedInSessionRef.current = true
+        console.log("User data already loaded in this session")
+      }
 
       try {
         const storedUser = localStorage.getItem("chronos_user")
@@ -104,7 +154,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               try {
                 isUpdatingRef.current = true
                 const timestamp = new Date().getTime()
-                const response = await fetch(`/api/users/${parsedUser.id}?t=${timestamp}`)
+                const response = await fetch(`/api/users/${parsedUser.id}?t=${timestamp}`, {
+                  cache: "no-store",
+                  headers: {
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    Pragma: "no-cache",
+                    Expires: "0",
+                  },
+                })
                 const data = await response.json()
 
                 if (data.success && data.user) {
@@ -116,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   setUser(freshUser)
                   localStorage.setItem("chronos_user", JSON.stringify(freshUser))
                 } else {
-                  localStorage.removeItem("chronos_user")
+                  clearAllStorageData()
                   setUser(null)
                 }
               } catch (error) {
@@ -129,11 +186,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("Error loading user from localStorage:", error)
-        localStorage.removeItem("chronos_user")
+        clearAllStorageData()
         setUser(null)
       } finally {
         setIsLoading(false)
         initialLoadDoneRef.current = true
+        // Устанавливаем флаг в sessionStorage
+        sessionStorage.setItem("user_data_loaded", "true")
       }
     }
 
@@ -223,8 +282,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    localStorage.removeItem("chronos_user")
+    // Полностью очищаем все данные из хранилищ
+    clearAllStorageData()
+
+    // Сбрасываем флаги
+    dataLoadedInSessionRef.current = false
+
+    // Сбрасываем состояние пользователя
     setUser(null)
+
+    // Перенаправляем на страницу входа
     router.push("/login")
   }
 
@@ -252,4 +319,3 @@ export function useAuth() {
   }
   return context
 }
-

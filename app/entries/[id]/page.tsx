@@ -218,7 +218,7 @@ export default function EntryPage() {
         </div>
         <h2 className="text-2xl font-bold">Запись не найдена</h2>
         <p className="text-muted-foreground text-center max-w-md">
-          Запись, которую вы ищете, не существует или была удалена.
+          Запись, которую вы ищете, не суще��твует или была удалена.
         </p>
         <Button onClick={() => router.back()} className="mt-4">
           Вернуться назад
@@ -408,7 +408,7 @@ export default function EntryPage() {
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 max-w-4xl mx-auto w-full">
+      <div className="flex-1 w-full">
         {/* Верхняя панель */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
           <div className="flex items-center gap-2">
@@ -716,4 +716,3 @@ export default function EntryPage() {
     </div>
   )
 }
-

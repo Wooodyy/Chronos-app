@@ -11,12 +11,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const user = await getUserById(userId)
+    //console.log("API: User data retrieved:", user) // Добавим для отладки
 
     if (!user) {
       return NextResponse.json({ success: false, message: "Пользователь не найден" }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, user })
+    // Добавляем заголовки для предотвращения кэширования
+    const headers = new Headers()
+    headers.append("Cache-Control", "no-cache, no-store, must-revalidate")
+    headers.append("Pragma", "no-cache")
+    headers.append("Expires", "0")
+
+    return NextResponse.json(
+      { success: true, user },
+      {
+        status: 200,
+        headers: headers,
+      },
+    )
   } catch (error) {
     console.error("Ошибка при получении пользователя:", error)
     return NextResponse.json({ success: false, message: "Ошибка сервера при получении пользователя" }, { status: 500 })
@@ -49,4 +62,3 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ success: false, message: "Ошибка сервера при обновлении пользователя" }, { status: 500 })
   }
 }
-

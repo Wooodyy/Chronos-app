@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, Plus, Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,40 +19,61 @@ export default function RemindersPage() {
   const [reminders, setReminders] = useState<Entry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [loadingError, setLoadingError] = useState(false)
 
-  useEffect(() => {
-    const fetchReminders = async () => {
-      if (!user?.login) {
-        setIsLoading(false)
-        return
-      }
+  // Переместил объявление ref внутрь компонента
+  const remindersLoadedRef = useRef(false)
 
-      try {
-        const response = await fetch(`/api/reminders/user/${user.login}`)
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            // Преобразуем даты из строк в объекты Date
-            const formattedReminders = data.reminders.map((reminder: any) => ({
-              ...reminder,
-              date: new Date(reminder.date),
-              repeat_until: reminder.repeat_until ? new Date(reminder.repeat_until) : undefined,
-            }))
-            setReminders(formattedReminders)
-          } else {
-            showNotification("Не удалось загрузить напоминания", "error")
-          }
-        } else {
-          showNotification("Ошибка при загрузке напоминаний", "error")
-        }
-      } catch (error) {
-        console.error("Error fetching reminders:", error)
-        showNotification("Произошла ошибка при загрузке напоминаний", "error")
-      } finally {
-        setIsLoading(false)
-      }
+  // Функция для загрузки напоминаний
+  const fetchReminders = async () => {
+    if (!user?.login) {
+      setIsLoading(false)
+      return
     }
 
+    // Проверяем, были ли уже загружены напоминания в текущей сессии
+    if (remindersLoadedRef.current) {
+      console.log("Reminders already loaded in this session")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setLoadingError(false)
+
+      const response = await fetch(`/api/reminders/user/${user.login}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Преобразуем даты из строк в объекты Date
+          const formattedReminders = data.reminders.map((reminder: any) => ({
+            ...reminder,
+            date: new Date(reminder.date),
+            repeat_until: reminder.repeat_until ? new Date(reminder.repeat_until) : undefined,
+          }))
+          setReminders(formattedReminders)
+        } else {
+          setLoadingError(true)
+          showNotification("Не удалось загрузить напоминания", "error")
+        }
+      } else {
+        setLoadingError(true)
+        showNotification("Ошибка при загрузке напоминаний", "error")
+      }
+    } catch (error) {
+      setLoadingError(true)
+      console.error("Error fetching reminders:", error)
+      showNotification("Произошла ошибка при загрузке напоминаний", "error")
+    } finally {
+      setIsLoading(false)
+      // Устанавливаем флаг, что напоминания были загружены
+      remindersLoadedRef.current = true
+    }
+  }
+
+  // Загружаем напоминания при монтировании компонента
+  useEffect(() => {
     fetchReminders()
   }, [user, showNotification])
 
@@ -128,17 +149,19 @@ export default function RemindersPage() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Напоминания</h1>
           </div>
 
-          {/* Кнопка "Новое напоминание" скрыта на мобильных устройствах и имеет фиолетовый цвет со свечением */}
-          <Button
-            onClick={handleCreateReminder}
-            className="gap-2 hidden md:flex bg-amber-600 hover:bg-amber-700"
-            style={{
-              boxShadow: "0 0 15px rgba(217, 119, 6, 0.5)",
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Новое напоминание
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Кнопка "Новое напоминание" скрыта на мобильных устройствах */}
+            <Button
+              onClick={handleCreateReminder}
+              className="gap-2 hidden md:flex bg-amber-600 hover:bg-amber-700"
+              style={{
+                boxShadow: "0 0 15px rgba(217, 119, 6, 0.5)",
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Новое напоминание
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 mb-6">
@@ -156,6 +179,19 @@ export default function RemindersPage() {
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : loadingError ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100 mb-4">
+              <Bell className="h-10 w-10 text-red-500" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Ошибка загрузки</h2>
+            <p className="text-muted-foreground max-w-md mb-6">
+              Не удалось загрузить напоминания. Пожалуйста, попробуйте обновить страницу.
+            </p>
+            <Button onClick={() => window.location.reload()} className="bg-amber-600 hover:bg-amber-700">
+              Обновить страницу
+            </Button>
           </div>
         ) : groupedReminders.length > 0 ? (
           <div className="space-y-8">
@@ -185,7 +221,7 @@ export default function RemindersPage() {
               onClick={handleCreateReminder}
               className="bg-amber-600 hover:bg-amber-700"
               style={{
-              boxShadow: "0 0 15px rgba(217, 119, 6, 0.5)",
+                boxShadow: "0 0 15px rgba(217, 119, 6, 0.5)",
               }}
             >
               Создать напоминание

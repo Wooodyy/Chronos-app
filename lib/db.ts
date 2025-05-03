@@ -55,9 +55,9 @@ export async function authenticateUser(login: string, password: string) {
     return {
       id: user.id,
       login: user.login,
-      name: `${user.first_name} ${user.last_name}`.trim(),
-      firstName: user.first_name,
-      lastName: user.last_name,
+      name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+      firstName: user.first_name || "",
+      lastName: user.last_name || "",
       email: user.email,
       role: user.role,
       avatar: avatarBase64 ? `data:image/jpeg;base64,${avatarBase64}` : null,
@@ -108,9 +108,9 @@ export async function registerUser(userData: {
       user: {
         id: newUser.id,
         login: newUser.login,
-        name: `${newUser.first_name} ${newUser.last_name}`.trim(),
-        firstName: newUser.first_name,
-        lastName: newUser.lastName,
+        name: `${newUser.first_name || ""} ${newUser.last_name || ""}`.trim(),
+        firstName: newUser.first_name || "",
+        lastName: newUser.last_name || "",
         email: newUser.email,
         role: newUser.role,
         avatar: null,
@@ -143,12 +143,21 @@ export async function getUserById(userId: number) {
       avatarBase64 = Buffer.from(user.avatar).toString("base64")
     }
 
+    // Добавляем проверку и логирование для отладки
+    /*console.log("DB: User data retrieved:", {
+      id: user.id,
+      login: user.login,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+    })*/
+
     return {
       id: user.id,
       login: user.login,
-      name: `${user.first_name} ${user.last_name}`.trim(),
-      firstName: user.first_name,
-      lastName: user.lastName,
+      name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+      firstName: user.first_name || "",
+      lastName: user.last_name || "",
       email: user.email,
       role: user.role,
       avatar: avatarBase64 ? `data:image/jpeg;base64,${avatarBase64}` : null,
@@ -200,9 +209,9 @@ export async function updateUser(
       user: {
         id: user.id,
         login: user.login,
-        name: `${user.first_name} ${user.last_name}`.trim(),
-        firstName: user.first_name,
-        lastName: user.lastName,
+        name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+        firstName: user.first_name || "",
+        lastName: user.last_name || "",
         email: user.email,
         role: user.role,
         avatar: avatarBase64 ? `data:image/jpeg;base64,${avatarBase64}` : null,
@@ -210,7 +219,7 @@ export async function updateUser(
       },
     }
   } catch (error) {
-    console.error("Ошибка обновлеия пользователя:", error)
+    console.error("Ошибка обновления пользователя:", error)
     return { success: false, message: "Ошибка при обновлении пользователя" }
   }
 }
@@ -583,8 +592,6 @@ export async function updateNote(
     return false
   }
 }
-
-// Add these functions to the existing lib/db.ts file after the note-related functions
 
 // Функция для получения всех напоминаний пользователя
 export async function getUserReminders(login: string): Promise<Entry[]> {

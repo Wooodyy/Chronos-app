@@ -128,7 +128,7 @@ export default function NewNotePage() {
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 max-w-4xl mx-auto w-full">
+      <div className="flex-1 w-full">
         {/* Верхняя панель */}
         <div className="sticky top-0 z-30 flex items-center justify-between p-4 bg-background/95 backdrop-blur-md border-b shadow-sm">
           <div className="flex items-center gap-2">

@@ -11,7 +11,7 @@ import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
 
 const menuItems = [
-  { name: "Главная", icon: Calendar, href: "/dashboard" },
+  { name: "Календарь", icon: Calendar, href: "/dashboard" },
   { name: "Напоминания", icon: Bell, href: "/reminders" },
   { name: "Заметки", icon: BookMarked, href: "/notes" },
   { name: "Профиль", icon: User2, href: "/profile" },
@@ -110,52 +110,52 @@ export function Sidebar() {
       <div className="relative flex-1 overflow-y-auto py-6 px-4 z-10 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
         <nav className="space-y-2">
           {menuItems.map((item) => {
-        const Icon = item.icon
-        const isActive = pathname === item.href
+            const Icon = item.icon
+            const isActive = pathname === item.href
 
-        return (
-          <Link key={item.href} href={item.href}>
-            <div
-          className={cn(
-            "relative flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200",
-            isCollapsed ? "justify-center" : "",
-            isActive
-              ? "text-primary dark:text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground",
-            "hover:scale-[1.03] hover:bg-primary/5 active:scale-[0.98]",
-          )}
-            >
-          {/* Active indicator - статический, без анимации */}
-          {isActive && (
-            <div className="absolute inset-0 rounded-xl bg-primary/10 dark:bg-primary/20 z-0 shadow-[0_0_20px_1px_rgba(139,92,246,0.2),inset_0_0_8px_rgba(139,92,246,0.1)]" />
-          )}
+            return (
+              <Link key={item.href} href={item.href}>
+                <div
+                  className={cn(
+                    "relative flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200",
+                    isCollapsed ? "justify-center" : "",
+                    isActive
+                      ? "text-primary dark:text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                    "hover:scale-[1.03] hover:bg-primary/5 active:scale-[0.98]",
+                  )}
+                >
+                  {/* Active indicator - статический, без анимации */}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-xl bg-primary/10 dark:bg-primary/20 z-0 shadow-[0_0_20px_1px_rgba(139,92,246,0.2),inset_0_0_8px_rgba(139,92,246,0.1)]" />
+                  )}
 
-          {/* Icon */}
-          <div className="relative z-10">
-            <Icon
-              className={cn(
-            "h-5 w-5 transition-colors",
-            isActive
-              ? "text-primary dark:text-primary-foreground"
-              : "text-muted-foreground group-hover:text-foreground",
-              )}
-            />
-          </div>
+                  {/* Icon */}
+                  <div className="relative z-10">
+                    <Icon
+                      className={cn(
+                        "h-5 w-5 transition-colors",
+                        isActive
+                          ? "text-primary dark:text-primary-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    />
+                  </div>
 
-          {/* Text label */}
-          {!isCollapsed && (
-            <span
-              className={cn(
-            "text-sm font-medium relative z-10 transition-opacity duration-200",
-            isActive && "font-semibold",
-              )}
-            >
-              {item.name}
-            </span>
-          )}
-            </div>
-          </Link>
-        )
+                  {/* Text label */}
+                  {!isCollapsed && (
+                    <span
+                      className={cn(
+                        "text-sm font-medium relative z-10 transition-opacity duration-200",
+                        isActive && "font-semibold",
+                      )}
+                    >
+                      {item.name}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            )
           })}
         </nav>
       </div>
@@ -203,7 +203,7 @@ export function Sidebar() {
       </div>
 
       {/* User profile */}
-      {!isCollapsed && (
+      {!isCollapsed ? (
         <div className="relative p-4 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -212,14 +212,14 @@ export function Sidebar() {
                   <Avatar className="cursor-pointer border-2 border-primary/20">
                     <AvatarImage src={user?.avatar ?? undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {user?.name?.substring(0, 2) || "U"}
+                      {user?.firstName?.substring(0, 2) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute inset-0 rounded-full shadow-[0_0_10px_2px_rgba(139,92,246,0.3),inset_0_0_4px_rgba(139,92,246,0.3)]" />
                 </div>
               </Link>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user?.name || "Пользователь"}</p>
+                <p className="text-sm font-medium truncate">{user?.firstName || "Пользователь"}</p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email || "user@example.com"}</p>
               </div>
             </div>
@@ -228,6 +228,20 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+      ) : (
+        <div className="relative p-4 z-10 flex justify-center">
+          <Link href="/profile">
+            <div className="relative transition-transform hover:scale-110 active:scale-95">
+              <Avatar className="cursor-pointer border-2 border-primary/20">
+                <AvatarImage src={user?.avatar ?? undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {user?.firstName?.substring(0, 2) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 rounded-full shadow-[0_0_10px_2px_rgba(139,92,246,0.3),inset_0_0_4px_rgba(139,92,246,0.3)]" />
+            </div>
+          </Link>
+        </div>
       )}
     </div>
   )
@@ -235,12 +249,8 @@ export function Sidebar() {
   // Mobile header with glassmorphism
   const MobileHeader = (
     <div className="md:hidden fixed top-0 left-0 right-0 z-50 animate-slideDown">
-      {/* Glassmorphism background with more depth */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 dark:from-zinc-900/90 dark:to-zinc-900/70 backdrop-blur-xl border-b border-white/20 dark:border-zinc-800/20 z-0" />
-
-      {/* Decorative elements - статические, без анимации */}
-      <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl opacity-30 -translate-y-20 translate-x-20 z-0" />
-      <div className="absolute bottom-0 left-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl opacity-30 translate-y-10 -translate-x-20 z-0" />
+      {/* Непрозрачный фон вместо glassmorphism */}
+      <div className="absolute inset-0 bg-white dark:bg-zinc-900 border-b border-white/20 dark:border-zinc-800/20 z-0" />
 
       {/* Content */}
       <div className="relative flex items-center justify-between p-4 z-10">
@@ -260,7 +270,7 @@ export function Sidebar() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0 text-right">
-            <p className="text-sm font-medium truncate">{user?.name || "Пользователь"}</p>
+            <p className="text-sm font-medium truncate">{user?.firstName || "Пользователь"}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email || "user@example.com"}</p>
           </div>
           <Link href="/profile">
@@ -268,7 +278,7 @@ export function Sidebar() {
               <Avatar className="h-9 w-9 cursor-pointer border-2 border-primary/20">
                 <AvatarImage src={user?.avatar ?? undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {user?.name?.substring(0, 2) || "U"}
+                  {user?.firstName?.substring(0, 2) || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full shadow-[0_0_10px_2px_rgba(139,92,246,0.3),inset_0_0_4px_rgba(139,92,246,0.3)]" />
@@ -282,8 +292,8 @@ export function Sidebar() {
   // Mobile bottom navigation with glassmorphism
   const MobileNav = (
     <div className="md:hidden fixed bottom-0 left-0 right-0 w-full z-50 animate-slideUp">
-      {/* Glassmorphism background */}
-      <div className="absolute inset-0 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border-t border-white/20 dark:border-zinc-800/20 z-0" />
+      {/* Непрозрачный фон вместо glassmorphism */}
+      <div className="absolute inset-0 bg-white dark:bg-zinc-900 border-t border-white/20 dark:border-zinc-800/20 z-0" />
 
       {/* Content */}
       <nav className="relative grid grid-cols-5 w-full py-2 px-0 gap-1 z-10">

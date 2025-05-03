@@ -116,7 +116,7 @@ const ContributionGraph = () => {
                         ? ["bg-zinc-800", "bg-purple-900/40", "bg-purple-700/60", "bg-purple-600/80", "bg-purple-500"][
                             week[rowIndex]
                           ]
-                        : ["bg-zinc-200", "bg-purple-300/40", "bg-purple-400/60", "bg-purple-500/80", "bg-purple-600"][
+                        : ["bg-zinc-800", "bg-purple-900/40", "bg-purple-700/60", "bg-purple-600/80", "bg-purple-500"][
                             week[rowIndex]
                           ],
                     )}
@@ -130,11 +130,11 @@ const ContributionGraph = () => {
           <div className="absolute bottom-0 right-0 flex items-center text-xs text-muted-foreground mt-4">
             <span>Меньше</span>
             <div className="flex gap-1 mx-2">
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-zinc-800" : "bg-zinc-200")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-900/40" : "bg-purple-300/40")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-700/60" : "bg-purple-400/60")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-600/80" : "bg-purple-500/80")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-500" : "bg-purple-600")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-zinc-800" : "bg-zinc-800")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-900/40" : "bg-purple-900/40")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-700/60" : "bg-purple-700/60")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-600/80" : "bg-purple-600/80")} />
+              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-500" : "bg-purple-500")} />
             </div>
             <span>Больше</span>
           </div>
@@ -587,7 +587,9 @@ export default function ProfilePage() {
             <div className="relative group">
               <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
                 <AvatarImage src={avatarPreview || user?.avatar || undefined} />
-                <AvatarFallback className="text-3xl bg-primary/10">{user?.name?.substring(0, 2) || "U"}</AvatarFallback>
+                <AvatarFallback className="text-3xl bg-primary/10">
+                  {user?.firstName?.substring(0, 2) || "U"}
+                </AvatarFallback>
               </Avatar>
               <button
                 className="absolute bottom-2 right-2 bg-[#8b5cf6] text-white rounded-full p-2 transition-transform hover:scale-110 active:scale-95 shadow-[0_0_15px_rgba(139,92,246,0.7)] w-8 h-8 flex items-center justify-center"
@@ -612,7 +614,7 @@ export default function ProfilePage() {
         <div className="mt-20">
           {/* User info section */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">{user.name || "Пользователь"}</h1>
+            <h1 className="text-3xl font-bold">{user.firstName || "Пользователь"}</h1>
             <h2 className="text-xl text-muted-foreground mb-4 flex items-center gap-2">
               <AtSign className="h-4 w-4" />
               {user.login || "@username"}
