@@ -3,12 +3,13 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Calendar, Bell, BookMarked, User2, Mic, Menu, Moon, Sun } from "lucide-react"
+import { Calendar, Bell, BookMarked, User2, Mic, Menu, Moon, Sun, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 const menuItems = [
   { name: "Календарь", icon: Calendar, href: "/dashboard" },
@@ -49,11 +50,96 @@ export function Sidebar() {
   const pathname = usePathname()
   const [isRecording, setIsRecording] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [transcript, setTranscript] = useState("")
+  const [showTranscriptDialog, setShowTranscriptDialog] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const { user, logout } = useAuth()
   const { theme } = useTheme()
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+  // Инициализация распознавания речи
+  useEffect(() => {
+    // Проверяем поддержку браузером
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (SpeechRecognitionAPI) {
+      const recognition: SpeechRecognition = new SpeechRecognitionAPI()
+
+      // Настройка параметров
+      recognition.lang = "ru-RU"
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+
+      // Обработчик результатов
+      recognition.onresult = (event) => {
+        const result = event.results[event.resultIndex]
+        if (result.isFinal) {
+          const recognizedText = result[0].transcript
+          setTranscript(recognizedText)
+          console.log("Распознанный текст:", recognizedText)
+
+          // Показываем диалог с распознанным текстом
+          setIsProcessing(true)
+          setShowTranscriptDialog(true)
+
+          // Имитируем обработку текста
+          setTimeout(() => {
+            setIsProcessing(false)
+          }, 2000)
+        }
+      }
+
+      // Обработчик окончания распознавания
+      recognition.onend = () => {
+        setIsRecording(false)
+        console.log("Распознавание завершено")
+      }
+
+      // Обработчик ошибок
+      recognition.onerror = (event) => {
+        console.error("Ошибка распознавания:", event.error, event.message)
+        setIsRecording(false)
+      }
+
+      recognitionRef.current = recognition
+    } else {
+      console.warn("Ваш браузер не поддерживает распознавание речи")
+    }
+
+    // Очистка при размонтировании
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort()
+        } catch (e) {
+          console.error("Ошибка при остановке распознавания:", e)
+        }
+      }
+    }
+  }, [])
 
   const handleVoiceInput = () => {
-    setIsRecording(!isRecording)
+    if (!recognitionRef.current) {
+      console.warn("Распознавание речи не поддерживается")
+      return
+    }
+
+    if (isRecording) {
+      // Остановка записи
+      recognitionRef.current.stop()
+      setIsRecording(false)
+    } else {
+      // Начало записи
+      try {
+        recognitionRef.current.start()
+        setIsRecording(true)
+        console.log("Начало распознавания речи...")
+      } catch (error) {
+        console.error("Ошибка при запуске распознавания:", error)
+      }
+    }
   }
 
   const handleLogout = () => {
@@ -196,7 +282,7 @@ export function Sidebar() {
                   <div className="absolute -inset-2 rounded-full border-2 border-white/30 animate-pulse" />
                 )}
               </div>
-              <span className="text-sm font-medium text-white">Голосовой ввод</span>
+              <span className="text-sm font-medium text-white">{isRecording ? "Говорите..." : "Голосовой ввод"}</span>
             </div>
           </button>
         )}
@@ -289,79 +375,51 @@ export function Sidebar() {
     </div>
   )
 
-  // Mobile bottom navigation with glassmorphism
+  // Минималистичное мобильное нижнее меню с особой анимацией для кнопки голосового ввода
   const MobileNav = (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 w-full z-50 animate-slideUp">
-      {/* Непрозрачный фон вместо glassmorphism */}
-      <div className="absolute inset-0 bg-white dark:bg-zinc-900 border-t border-white/20 dark:border-zinc-800/20 z-0" />
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 animate-slideUp">
+      {/* Непрозрачный фон того же цвета, что и верхняя часть */}
+      <div className="absolute inset-0 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 z-0" />
 
-      {/* Content */}
-      <nav className="relative grid grid-cols-5 w-full py-2 px-0 gap-1 z-10">
+      {/* Навигационные элементы */}
+      <nav className="relative flex items-center justify-around py-4 z-10">
         {menuItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
 
           return (
-            <Link key={item.href} href={item.href} className="flex justify-center">
-              <div
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-lg transition-all duration-200 w-16",
-                  isActive ? "text-primary dark:text-primary-foreground" : "text-muted-foreground",
-                  "hover:scale-110 hover:-translate-y-0.5 active:scale-90",
-                )}
-              >
-                <span className="relative flex justify-center">
-                  <Icon
-                    className={cn(
-                      "h-5 w-5 transition-all duration-200 relative z-10",
-                      isActive
-                        ? "text-background-foreground dark:text-primary-foreground scale-110"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  {isActive && (
-                    <>
-                      {/* Статичное свечение */}
-                      <div
-                        className="absolute inset-[-10px] z-0 opacity-80"
-                        style={{
-                          background: "radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(139, 92, 246, 0) 70%)",
-                        }}
-                      />
-                      {/* Внутреннее свечение иконки */}
-                      <div className="absolute inset-[-2px] rounded-full z-0 opacity-70 shadow-[0_0_12px_4px_rgba(139,92,246,0.4),inset_0_0_4px_rgba(139,92,246,0.4)]" />
-                    </>
-                  )}
-                </span>
-                <span
+            <Link key={item.href} href={item.href} className="flex justify-center items-center">
+              <div className="relative flex items-center justify-center h-10 w-10">
+                {/* Индикатор активного состояния - тонкая линия сверху */}
+                {isActive && <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary" />}
+
+                {/* Иконка */}
+                <Icon
                   className={cn(
-                    "text-xs font-medium transition-all duration-200",
-                    isActive
-                      ? "text-background-foreground dark:text-primary-foreground font-semibold"
-                      : "text-muted-foreground",
+                    "h-7 w-7 transition-colors",
+                    isActive ? "text-primary" : "text-gray-500 dark:text-gray-400",
                   )}
-                >
-                  {item.name}
-                </span>
+                />
               </div>
             </Link>
           )
         })}
-        <button
-          onClick={handleVoiceInput}
-          className={cn(
-            "flex flex-col items-center gap-1 p-2 rounded-lg transition-all duration-200 w-16",
-            isRecording ? "text-primary dark:text-primary-foreground" : "text-muted-foreground",
-            "hover:scale-110 hover:-translate-y-0.5 active:scale-90",
-          )}
-        >
-          <span className="relative flex justify-center">
-            <Mic className="h-5 w-5" />
-            {isRecording && (
-              <div className="absolute -inset-1 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
-            )}
-          </span>
-          <span className="text-xs font-medium">Голос</span>
+
+        {/* Кнопка голосового ввода с такой же анимацией, как в десктопной версии */}
+        <button onClick={handleVoiceInput} className="flex justify-center">
+          <div className="relative flex flex-col items-center justify-center h-10 w-10">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm transition-transform hover:scale-110 active:scale-90">
+              <Mic
+                className={cn(
+                  "h-6 w-6 transition-colors",
+                  isRecording ? "text-primary dark:text-primary-foreground" : "text-muted-foreground",
+                )}
+              />
+              {isRecording && (
+                <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
+              )}
+            </div>
+          </div>
         </button>
       </nav>
     </div>
@@ -372,6 +430,50 @@ export function Sidebar() {
       {DesktopSidebar}
       {MobileHeader}
       {MobileNav}
+
+      {/* Модальное окно с распознанным текстом */}
+      <Dialog open={showTranscriptDialog} onOpenChange={setShowTranscriptDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+              Распознанный текст
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Ваше голосовое сообщение было успешно распознано
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="relative p-6 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 shadow-inner">
+            {/* Декоративные элементы */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl opacity-30 -translate-y-16 translate-x-16 z-0" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl opacity-30 translate-y-16 -translate-x-16 z-0" />
+
+            {/* Текст */}
+            <p className="relative text-lg font-medium text-center z-10">
+              {transcript || "Не удалось распознать текст"}
+            </p>
+          </div>
+
+          {/* Анимация загрузки */}
+          <div className="flex flex-col items-center justify-center mt-4">
+            {isProcessing ? (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground">Обработка запроса...</p>
+                </div>
+                <div className="w-full mt-3">
+                  <div className="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-primary/60 to-primary rounded-full animate-pulse-width" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-primary font-medium">Готово к использованию</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
