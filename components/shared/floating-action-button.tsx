@@ -81,6 +81,7 @@ export function FloatingActionButton() {
                     "flex h-12 w-12 items-center justify-center rounded-full shadow-md",
                     item.color,
                     "text-white",
+                    "shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-shadow",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -92,7 +93,7 @@ export function FloatingActionButton() {
       </AnimatePresence>
 
       <motion.button
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg z-50"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg z-50 shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:shadow-[0_0_20px_rgba(139,92,246,0.7)] transition-shadow"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={toggleMenu}
@@ -104,4 +105,3 @@ export function FloatingActionButton() {
     </div>
   )
 }
-

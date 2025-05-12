@@ -247,6 +247,14 @@
     background-size: 200% 100%;
     animation: shimmer 3s infinite;
   }
+
+  .transform-none {
+    transform: none !important;
+  }
+
+  .transition-none {
+    transition: none !important;
+  }
 }
 
 @keyframes pulseWidth {

@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem("sidebar_refreshed")
     sessionStorage.removeItem("reminders_loaded")
     sessionStorage.removeItem("page_reloaded")
+    sessionStorage.removeItem("user_data_loaded")
 
     // Очищаем все другие ключи, связанные с приложением
     for (let i = 0; i < localStorage.length; i++) {
@@ -287,12 +288,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Сбрасываем флаги
     dataLoadedInSessionRef.current = false
+    initialLoadDoneRef.current = false
 
     // Сбрасываем состояние пользователя
     setUser(null)
 
-    // Перенаправляем на страницу входа
-    router.push("/login")
+    // Добавляем небольшую задержку перед перенаправлением, чтобы убедиться, что все данные очищены
+    setTimeout(() => {
+      // Перенаправляем на страницу входа с параметром, предотвращающим автоматический вход
+      router.push("/login?logout=true")
+    }, 100)
   }
 
   return (
