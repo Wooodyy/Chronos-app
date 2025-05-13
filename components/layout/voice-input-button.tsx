@@ -1,49 +1,52 @@
 "use client"
 
 import { Mic } from "lucide-react"
-import { motion } from "framer-motion"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
+import { VoiceInputOverlay } from "./voice-input-overlay"
 
 export function VoiceInputButton() {
-  const [isRecording, setIsRecording] = useState(false)
+  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false)
 
   const handleVoiceInput = () => {
-    setIsRecording(!isRecording)
+    setIsVoiceOverlayOpen(true)
+  }
+
+  const handleVoiceOverlayClose = () => {
+    setIsVoiceOverlayOpen(false)
+  }
+
+  const handleTextRecognized = (text: string) => {
+    console.log("Распознанный текст:", text)
+    // Здесь можно добавить логику обработки распознанного текста
   }
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleVoiceInput}
-            className={cn("fixed bottom-20 left-6 z-50 md:hidden", isRecording && "text-primary-foreground")}
-          >
-            <Mic className="h-5 w-5" />
-            {isRecording && (
-              <motion.div
-                className="absolute -inset-2 rounded-full border-2 border-primary/30"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [1, 0.5, 1],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                }}
-              />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Голосовой ввод</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleVoiceInput}
+              className="fixed bottom-20 left-6 z-50 md:hidden"
+            >
+              <Mic className="h-5 w-5" />
+              <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Голосовой ввод</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Voice Input Overlay */}
+      <VoiceInputOverlay
+        isOpen={isVoiceOverlayOpen}
+        onClose={handleVoiceOverlayClose}
+        onTextRecognized={handleTextRecognized}
+      />
+    </>
   )
 }
-

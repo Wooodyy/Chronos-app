@@ -93,7 +93,7 @@ export function FloatingActionButton() {
       </AnimatePresence>
 
       <motion.button
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg z-50 shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:shadow-[0_0_20px_rgba(139,92,246,0.7)] transition-shadow"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-lg z-50 shadow-[0_0_18px_rgba(147,51,234,0.7)] hover:shadow-[0_0_25px_rgba(147,51,234,0.9)] transition-all duration-300"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={toggleMenu}

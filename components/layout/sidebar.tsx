@@ -3,13 +3,13 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Calendar, Bell, BookMarked, User2, Mic, Menu, Moon, Sun, Loader2 } from "lucide-react"
+import { Calendar, Bell, BookMarked, User2, Mic, Menu, Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { VoiceInputOverlay } from "./voice-input-overlay"
 
 const menuItems = [
   { name: "Календарь", icon: Calendar, href: "/dashboard" },
@@ -48,102 +48,23 @@ export default function ThemeToggle() {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const [isRecording, setIsRecording] = useState(false)
+  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const [showTranscriptDialog, setShowTranscriptDialog] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
   const { user, logout } = useAuth()
-  const { theme } = useTheme()
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
-  const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-
-  // Инициализация распознавания речи
-  useEffect(() => {
-    // Проверяем поддержку браузером
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-
-    if (SpeechRecognitionAPI) {
-      const recognition: SpeechRecognition = new SpeechRecognitionAPI()
-
-      // Настройка параметров
-      recognition.lang = "ru-RU"
-      recognition.continuous = false
-      recognition.interimResults = false
-      recognition.maxAlternatives = 1
-
-      // Обработчик результатов
-      recognition.onresult = (event) => {
-        const result = event.results[event.resultIndex]
-        if (result.isFinal) {
-          const recognizedText = result[0].transcript
-          setTranscript(recognizedText)
-          console.log("Распознанный текст:", recognizedText)
-
-          // Показываем диалог с распознанным текстом
-          setIsProcessing(true)
-          setShowTranscriptDialog(true)
-
-          // Имитируем обработку текста
-          setTimeout(() => {
-            setIsProcessing(false)
-          }, 2000)
-        }
-      }
-
-      // Обработчик окончания распознавания
-      recognition.onend = () => {
-        setIsRecording(false)
-        console.log("Распознавание завершено")
-      }
-
-      // Обработчик ошибок
-      recognition.onerror = (event) => {
-        console.error("Ошибка распознавания:", event.error, event.message)
-        setIsRecording(false)
-      }
-
-      recognitionRef.current = recognition
-    } else {
-      console.warn("Ваш браузер не поддерживает распознавание речи")
-    }
-
-    // Очистка при размонтировании
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort()
-        } catch (e) {
-          console.error("Ошибка при остановке распознавания:", e)
-        }
-      }
-    }
-  }, [])
 
   const handleVoiceInput = () => {
-    if (!recognitionRef.current) {
-      console.warn("Распознавание речи не поддерживается")
-      return
-    }
-
-    if (isRecording) {
-      // Остановка записи
-      recognitionRef.current.stop()
-      setIsRecording(false)
-    } else {
-      // Начало записи
-      try {
-        recognitionRef.current.start()
-        setIsRecording(true)
-        console.log("Начало распознавания речи...")
-      } catch (error) {
-        console.error("Ошибка при запуске распознавания:", error)
-      }
-    }
+    setIsVoiceOverlayOpen(true)
   }
 
-  const handleLogout = () => {
-    logout()
+  const handleVoiceOverlayClose = () => {
+    setIsVoiceOverlayOpen(false)
+  }
+
+  const handleTextRecognized = (text: string) => {
+    setTranscript(text)
+    console.log("Распознанный текст в сайдбаре:", text)
+    // Здесь можно добавить логику обработки распознанного текста
   }
 
   // Desktop sidebar
@@ -253,15 +174,8 @@ export function Sidebar() {
             onClick={handleVoiceInput}
             className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm mx-auto transition-transform hover:scale-110 active:scale-90"
           >
-            <Mic
-              className={cn(
-                "h-5 w-5 transition-colors",
-                isRecording ? "text-primary dark:text-primary-foreground" : "text-muted-foreground",
-              )}
-            />
-            {isRecording && (
-              <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
-            )}
+            <Mic className="h-5 w-5 text-muted-foreground" />
+            <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
           </button>
         ) : (
           <button
@@ -278,11 +192,8 @@ export function Sidebar() {
             <div className="relative flex items-center gap-3 px-4 py-3 z-10">
               <div className="relative">
                 <Mic className="h-5 w-5 text-white" />
-                {isRecording && (
-                  <div className="absolute -inset-2 rounded-full border-2 border-white/30 animate-pulse" />
-                )}
               </div>
-              <span className="text-sm font-medium text-white">{isRecording ? "Говорите..." : "Голосовой ввод"}</span>
+              <span className="text-sm font-medium text-white">Голосовой ввод</span>
             </div>
           </button>
         )}
@@ -391,7 +302,9 @@ export function Sidebar() {
             <Link key={item.href} href={item.href} className="flex justify-center items-center">
               <div className="relative flex items-center justify-center h-10 w-10">
                 {/* Индикатор активного состояния - тонкая линия сверху */}
-                {isActive && <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary" />}
+                {isActive && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary shadow-[0_0_4px_1px_rgba(139,92,246,0.6)] transition-all duration-300" />
+                )}
 
                 {/* Иконка */}
                 <Icon
@@ -409,15 +322,8 @@ export function Sidebar() {
         <button onClick={handleVoiceInput} className="flex justify-center">
           <div className="relative flex flex-col items-center justify-center h-10 w-10">
             <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm transition-transform hover:scale-110 active:scale-90">
-              <Mic
-                className={cn(
-                  "h-6 w-6 transition-colors",
-                  isRecording ? "text-primary dark:text-primary-foreground" : "text-muted-foreground",
-                )}
-              />
-              {isRecording && (
-                <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
-              )}
+              <Mic className="h-6 w-6 text-muted-foreground" />
+              <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
             </div>
           </div>
         </button>
@@ -431,49 +337,12 @@ export function Sidebar() {
       {MobileHeader}
       {MobileNav}
 
-      {/* Модальное окно с распознанным текстом */}
-      <Dialog open={showTranscriptDialog} onOpenChange={setShowTranscriptDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
-              Распознанный текст
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              Ваше голосовое сообщение было успешно распознано
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="relative p-6 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 shadow-inner">
-            {/* Декоративные элементы */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl opacity-30 -translate-y-16 translate-x-16 z-0" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl opacity-30 translate-y-16 -translate-x-16 z-0" />
-
-            {/* Текст */}
-            <p className="relative text-lg font-medium text-center z-10">
-              {transcript || "Не удалось распознать текст"}
-            </p>
-          </div>
-
-          {/* Анимация загрузки */}
-          <div className="flex flex-col items-center justify-center mt-4">
-            {isProcessing ? (
-              <>
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                  <p className="text-sm text-muted-foreground">Обработка запроса...</p>
-                </div>
-                <div className="w-full mt-3">
-                  <div className="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary/60 to-primary rounded-full animate-pulse-width" />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-primary font-medium">Готово к использованию</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Voice Input Overlay */}
+      <VoiceInputOverlay
+        isOpen={isVoiceOverlayOpen}
+        onClose={handleVoiceOverlayClose}
+        onTextRecognized={handleTextRecognized}
+      />
     </>
   )
 }
