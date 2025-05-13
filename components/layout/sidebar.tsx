@@ -174,27 +174,17 @@ export function Sidebar() {
             onClick={handleVoiceInput}
             className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm mx-auto transition-transform hover:scale-110 active:scale-90"
           >
-            <Mic className="h-5 w-5 text-muted-foreground" />
+            <Mic className="h-5 w-5 text-white" />
             <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
           </button>
-        ) : (
+        ) : ( 
           <button
             onClick={handleVoiceInput}
-            className="relative w-full overflow-hidden rounded-xl transition-transform hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]"
+            className="relative flex w-full max-w-xs items-center justify-start gap-3 rounded-xl bg-primary/10 dark:bg-primary/20 backdrop-blur-sm px-4 py-3 text-left transition-transform hover:scale-105 active:scale-90"
           >
-            {/* Button background with gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary z-0" />
-
-            {/* Glow effect - статический, без анимации */}
-            <div className="absolute inset-0 shadow-[0_0_20px_5px_rgba(139,92,246,0.5),inset_0_0_10px_rgba(139,92,246,0.5)]" />
-
-            {/* Content */}
-            <div className="relative flex items-center gap-3 px-4 py-3 z-10">
-              <div className="relative">
-                <Mic className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-sm font-medium text-white">Голосовой ввод</span>
-            </div>
+            <Mic className="h-5 w-5 text-white" />
+            <span className="text-sm font-medium text-white">Голосовой ввод</span>
+            <div className="absolute inset-0 rounded-xl shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
           </button>
         )}
       </div>
@@ -219,9 +209,6 @@ export function Sidebar() {
                 <p className="text-sm font-medium truncate">{user?.firstName || "Пользователь"}</p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email || "user@example.com"}</p>
               </div>
-            </div>
-            <div className="flex items-center">
-              <ThemeToggle />
             </div>
           </div>
         </div>
@@ -322,7 +309,7 @@ export function Sidebar() {
         <button onClick={handleVoiceInput} className="flex justify-center">
           <div className="relative flex flex-col items-center justify-center h-10 w-10">
             <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm transition-transform hover:scale-110 active:scale-90">
-              <Mic className="h-6 w-6 text-muted-foreground" />
+              <Mic className="h-6 w-6 text-white" />
               <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
             </div>
           </div>

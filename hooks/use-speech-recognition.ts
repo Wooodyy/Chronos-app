@@ -4,10 +4,6 @@ import { useState, useEffect, useRef } from "react"
 
 interface UseSpeechRecognitionOptions {
   lang?: string
-  continuous?: boolean
-  interimResults?: boolean
-  maxAlternatives?: number
-  silenceTimeout?: number
   onResult?: (transcript: string) => void
   onError?: (error: string) => void
   onSilence?: () => void
@@ -16,210 +12,119 @@ interface UseSpeechRecognitionOptions {
 interface UseSpeechRecognitionReturn {
   isListening: boolean
   transcript: string
-  startListening: () => void
+  startListening: () => Promise<void>
   stopListening: () => void
-  toggleListening: () => void
   isSupported: boolean
   error: string | null
   resetTranscript: () => void
-  isSilent: boolean
+  hasPermission: boolean
+  checkPermission: () => Promise<boolean>
 }
-
-// declare SpeechRecognition variable
-declare var SpeechRecognition: any
-declare var webkitSpeechRecognition: any
 
 export function useSpeechRecognition(options: UseSpeechRecognitionOptions = {}): UseSpeechRecognitionReturn {
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isSupported, setIsSupported] = useState(false)
-  const [isSilent, setIsSilent] = useState(false)
+  const [hasPermission, setHasPermission] = useState(false)
 
   const recognitionRef = useRef<any>(null)
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const microphoneStreamRef = useRef<MediaStream | null>(null)
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const initialSilenceTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const hasSpeechRef = useRef(false)
-  const audioAnalysisActiveRef = useRef(false)
+  const micStreamRef = useRef<MediaStream | null>(null)
 
-  // Настройки по умолчанию
-  const {
-    lang = "ru-RU",
-    continuous = false,
-    interimResults = true,
-    maxAlternatives = 1,
-    silenceTimeout = 2000,
-    onResult,
-    onError,
-    onSilence,
-  } = options
+  // Настройки
+  const { lang = "ru-RU", onResult, onError, onSilence } = options
 
-  // Проверка поддержки браузером
+  // Проверяем поддержку API распознавания речи
   useEffect(() => {
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     setIsSupported(!!SpeechRecognitionAPI)
 
     if (!SpeechRecognitionAPI) {
-      setError("Ваш браузер не поддерживает распознавание речи")
-      console.warn("Ваш браузер не поддерживает распознавание речи")
+      console.warn("Браузер не поддерживает распознавание речи")
     }
 
+    // Проверяем разрешение при монтировании
+    checkPermission().catch(console.error)
+
+    // Очистка при размонтировании
     return () => {
-      cleanupAudio()
+      cleanup()
     }
   }, [])
 
-  // Функция для очистки аудио ресурсов
-  const cleanupAudio = () => {
-    audioAnalysisActiveRef.current = false
-
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = null
-    }
-
-    if (initialSilenceTimerRef.current) {
-      clearTimeout(initialSilenceTimerRef.current)
-      initialSilenceTimerRef.current = null
-    }
-
-    if (microphoneStreamRef.current) {
-      const tracks = microphoneStreamRef.current.getTracks()
-      tracks.forEach((track) => track.stop())
-      microphoneStreamRef.current = null
-    }
-
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+  // Функция очистки ресурсов
+  const cleanup = () => {
+    if (recognitionRef.current) {
       try {
-        audioContextRef.current.close().catch((e) => {
-          console.log("Ошибка при закрытии AudioContext:", e)
-        })
+        recognitionRef.current.abort()
+      } catch (e) {
+        console.log("Ошибка при остановке распознавания:", e)
+      }
+      recognitionRef.current = null
+    }
+
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current)
+      silenceTimeoutRef.current = null
+    }
+
+    if (micStreamRef.current) {
+      try {
+        const tracks = micStreamRef.current.getTracks()
+        tracks.forEach((track) => track.stop())
+      } catch (e) {
+        console.log("Ошибка при остановке микрофона:", e)
+      }
+      micStreamRef.current = null
+    }
+
+    if (audioContextRef.current) {
+      try {
+        if (audioContextRef.current.state !== "closed") {
+          audioContextRef.current.close()
+        }
       } catch (e) {
         console.log("Ошибка при закрытии AudioContext:", e)
       }
+      audioContextRef.current = null
     }
-
-    audioContextRef.current = null
-    analyserRef.current = null
   }
 
-  // Функция для анализа уровня звука
-  const setupAudioAnalysis = async () => {
+  // Проверка разрешения на доступ к микрофону
+  const checkPermission = async (): Promise<boolean> => {
     try {
-      // Очищаем предыдущие ресурсы
-      cleanupAudio()
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
-      // Устанавливаем флаг активности анализа звука
-      audioAnalysisActiveRef.current = true
-
-      // Создаем новый AudioContext
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      if (!AudioContextClass) {
-        console.warn("AudioContext не поддерживается браузером")
-        return
-      }
-
-      audioContextRef.current = new AudioContextClass()
-
-      // Запрашиваем доступ к микрофону
-      try {
-        microphoneStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch (err) {
-        console.error("Ошибка доступа к микрофону:", err)
-        // Не устанавливаем ошибку, так как распознавание речи может работать без анализа звука
-        return
-      }
-
-      // Если анализ звука был отменен во время запроса доступа к микрофону
-      if (!audioAnalysisActiveRef.current) {
-        cleanupAudio()
-        return
-      }
-
-      // Создаем анализатор
-      analyserRef.current = audioContextRef.current.createAnalyser()
-      analyserRef.current.fftSize = 256
-
-      // Подключаем микрофон к анализатору
-      const source = audioContextRef.current.createMediaStreamSource(microphoneStreamRef.current)
-      source.connect(analyserRef.current)
-
-      // Устанавливаем флаг тишины
-      setIsSilent(false)
-      hasSpeechRef.current = false
-
-      // Запускаем таймер для проверки начальной тишины
-      initialSilenceTimerRef.current = setTimeout(() => {
-        if (!hasSpeechRef.current && isListening) {
-          console.log("Начальная тишина обнаружена, останавливаем запись")
-          stopListening()
-          setIsSilent(true)
-          if (onSilence) onSilence()
+        // Сохраняем поток для дальнейшего использования или останавливаем его
+        if (micStreamRef.current) {
+          micStreamRef.current.getTracks().forEach((track) => track.stop())
         }
-      }, silenceTimeout)
 
-      // Запускаем анализ звука
-      detectSound()
+        // Останавливаем поток, так как мы только проверяем разрешение
+        stream.getTracks().forEach((track) => track.stop())
+
+        setHasPermission(true)
+        return true
+      } else {
+        setHasPermission(false)
+        return false
+      }
     } catch (err) {
-      console.error("Ошибка при настройке анализа звука:", err)
-      // Не устанавливаем ошибку, так как распознавание речи может работать без анализа звука
+      console.error("Ошибка при проверке доступа к микрофону:", err)
+      setHasPermission(false)
+      return false
     }
   }
 
-  // Функция для обнаружения звука
-  const detectSound = () => {
-    if (!analyserRef.current || !isListening || !audioAnalysisActiveRef.current) return
-
-    try {
-      const bufferLength = analyserRef.current.frequencyBinCount
-      const dataArray = new Uint8Array(bufferLength)
-      analyserRef.current.getByteFrequencyData(dataArray)
-
-      // Вычисляем среднюю громкость
-      let sum = 0
-      for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i]
-      }
-      const average = sum / bufferLength
-
-      // Порог для определения речи (может потребоваться настройка)
-      const threshold = 15
-
-      if (average > threshold) {
-        // Звук обнаружен
-        hasSpeechRef.current = true
-
-        // Сбрасываем таймер тишины
-        if (silenceTimerRef.current) {
-          clearTimeout(silenceTimerRef.current)
-        }
-
-        // Устанавливаем новый таймер тишины
-        silenceTimerRef.current = setTimeout(() => {
-          if (isListening && audioAnalysisActiveRef.current) {
-            console.log("Тишина обнаружена, останавливаем запись")
-            stopListening()
-          }
-        }, silenceTimeout)
-      }
-
-      // Продолжаем анализ, если все еще слушаем
-      if (isListening && audioAnalysisActiveRef.current) {
-        requestAnimationFrame(detectSound)
-      }
-    } catch (e) {
-      console.error("Ошибка при анализе звука:", e)
-      // Прекращаем анализ при ошибке, но не останавливаем распознавание
-      audioAnalysisActiveRef.current = false
-    }
-  }
-
-  const startListening = () => {
+  // Функция для запуска распознавания
+  const startListening = async (): Promise<void> => {
     if (!isSupported) {
-      setError("Распознавание речи не поддерживается")
+      const errorMsg = "Распознавание речи не поддерживается в вашем браузере"
+      setError(errorMsg)
+      if (onError) onError(errorMsg)
       return
     }
 
@@ -227,45 +132,40 @@ export function useSpeechRecognition(options: UseSpeechRecognitionOptions = {}):
       return // Уже слушаем
     }
 
+    // Проверяем разрешение
+    const hasAccess = await checkPermission()
+    if (!hasAccess) {
+      const errorMsg = "Нет доступа к микрофону"
+      setError(errorMsg)
+      if (onError) onError(errorMsg)
+      return
+    }
+
+    // Сбрасываем предыдущие состояния
     setError(null)
     setTranscript("")
-    setIsSilent(false)
-    hasSpeechRef.current = false
+
+    // Очищаем предыдущие ресурсы
+    cleanup()
 
     try {
-      // Настраиваем анализ звука (не блокируем основной поток распознавания)
-      setupAudioAnalysis().catch((e) => {
-        console.error("Ошибка при настройке анализа звука:", e)
-        // Не устанавливаем ошибку, так как распознавание речи может работать без анализа звука
-      })
-
-      // Создаем новый экземпляр для каждого сеанса распознавания
+      // Создаем новый экземпляр распознавания
       const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-
-      // Останавливаем предыдущий экземпляр, если он существует
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort()
-        } catch (e) {
-          console.log("Ошибка при остановке предыдущего распознавания:", e)
-        }
-      }
-
       const recognition = new SpeechRecognitionAPI()
 
       // Настройка параметров
       recognition.lang = lang
-      recognition.continuous = continuous
-      recognition.interimResults = interimResults
-      recognition.maxAlternatives = maxAlternatives
+      recognition.continuous = false // Останавливаем после признания фразы
+      recognition.interimResults = false // Получаем только финальные результаты
+      recognition.maxAlternatives = 1
 
       // Обработчик результатов
       recognition.onresult = (event: any) => {
         const result = event.results[event.resultIndex]
         if (result.isFinal) {
           const recognizedText = result[0].transcript
-          setTranscript(recognizedText)
           console.log("Распознанный текст:", recognizedText)
+          setTranscript(recognizedText)
 
           if (onResult) {
             onResult(recognizedText)
@@ -278,100 +178,91 @@ export function useSpeechRecognition(options: UseSpeechRecognitionOptions = {}):
         setIsListening(false)
         console.log("Распознавание завершено")
 
-        // Если не было речи, устанавливаем флаг тишины
-        if (!transcript && !hasSpeechRef.current) {
-          setIsSilent(true)
-          if (onSilence) onSilence()
+        // Если не было текста, вызываем обработчик тишины
+        if (!transcript && onSilence) {
+          onSilence()
         }
-
-        // Очищаем ресурсы
-        cleanupAudio()
       }
 
       // Обработчик ошибок
       recognition.onerror = (event: any) => {
-        // Игнорируем ошибку aborted, так как она возникает при нормальном завершении
         if (event.error !== "aborted") {
-          const errorMessage = `Ошибка распознавания: ${event.error}`
-          //console.error(errorMessage, event.message)
-          setError(errorMessage)
+          const errorMsg = `Ошибка распознавания: ${event.error}`
+          console.error(errorMsg)
+          setError(errorMsg)
 
           if (onError) {
-            onError(errorMessage)
+            onError(errorMsg)
           }
         }
-
         setIsListening(false)
-        cleanupAudio()
       }
 
       recognitionRef.current = recognition
 
+      // Запускаем автоматическую остановку через определенное время для обнаружения тишины
+      silenceTimeoutRef.current = setTimeout(() => {
+        if (isListening && recognitionRef.current) {
+          console.log("Тайм-аут распознавания, останавливаем")
+          stopListening()
+
+          if (onSilence) {
+            onSilence()
+          }
+        }
+      }, 10000) // 10 секунд максимальное время записи
+
       // Запускаем распознавание
       recognition.start()
       setIsListening(true)
-      console.log("Начало распознавания речи...")
-    } catch (error) {
-      console.error("Ошибка при запуске распознавания:", error)
-      setError("Не удалось запустить распознавание речи. Пожалуйста, проверьте разрешения микрофона.")
+      console.log("Начало распознавания речи")
+    } catch (err) {
+      console.error("Ошибка при запуске распознавания:", err)
+      const errorMsg = "Не удалось запустить распознавание речи"
+      setError(errorMsg)
+      if (onError) onError(errorMsg)
       setIsListening(false)
-      cleanupAudio()
     }
   }
 
+  // Функция для остановки распознавания
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current) {
       try {
         recognitionRef.current.stop()
-      } catch (error) {
-        console.error("Ошибка при остановке распознавания:", error)
-        // Если не удалось остановить, пробуем прервать
+      } catch (err) {
+        console.error("Ошибка при остановке распознавания:", err)
         try {
           recognitionRef.current.abort()
-        } catch (abortError) {
-          console.error("Ошибка при прерывании распознавания:", abortError)
+        } catch (abortErr) {
+          console.error("Ошибка при прерывании распознавания:", abortErr)
         }
       }
-      setIsListening(false)
-      cleanupAudio()
     }
+
+    // Очищаем таймер тишины
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current)
+      silenceTimeoutRef.current = null
+    }
+
+    setIsListening(false)
   }
 
-  const toggleListening = () => {
-    if (isListening) {
-      stopListening()
-    } else {
-      startListening()
-    }
-  }
-
+  // Сброс текста
   const resetTranscript = () => {
     setTranscript("")
   }
-
-  // Очистка при размонтировании
-  useEffect(() => {
-    return () => {
-      if (recognitionRef.current && isListening) {
-        try {
-          recognitionRef.current.abort()
-        } catch (e) {
-          console.error("Ошибка при остановке распознавания:", e)
-        }
-      }
-      cleanupAudio()
-    }
-  }, [isListening])
 
   return {
     isListening,
     transcript,
     startListening,
     stopListening,
-    toggleListening,
     isSupported,
     error,
     resetTranscript,
-    isSilent,
+    hasPermission,
+    checkPermission,
   }
 }

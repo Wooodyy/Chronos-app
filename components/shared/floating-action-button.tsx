@@ -93,14 +93,15 @@ export function FloatingActionButton() {
       </AnimatePresence>
 
       <motion.button
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-lg z-50 shadow-[0_0_18px_rgba(147,51,234,0.7)] hover:shadow-[0_0_25px_rgba(147,51,234,0.9)] transition-all duration-300"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/40 text-white  z-50 shadow-[0_0_18px_rgba(147,51,234,0.7)] hover:shadow-[0_0_25px_rgba(147,51,234,0.9)] transition-all duration-300"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={toggleMenu}
       >
-        <motion.div animate={{ rotate: isOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
+        <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
           {isOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
         </motion.div>
+        <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(147,51,234,0.6),inset_0_0_5px_rgba(147,51,234,0.6)]" />
       </motion.button>
     </div>
   )
