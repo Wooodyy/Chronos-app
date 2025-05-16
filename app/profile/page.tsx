@@ -344,7 +344,7 @@ export default function ProfilePage() {
         await updateUserData()
       } else {
         // Показываем уведомление об ошибке
-        showNotification(data.message || "Не удалось обновить аватар", "error")
+        showNotification(data.message || "Не удалось обновить авата", "error")
       }
     } catch (error) {
       console.error("Error uploading avatar:", error)
@@ -677,7 +677,7 @@ export default function ProfilePage() {
                   onClick={() => setActiveTab("notifications")}
                 >
                   <Bell className="h-4 w-4 mr-2" />
-                  Уведомления
+                  Настройки
                 </Button>
                 <Separator className="my-2" />
                 <Button
@@ -846,7 +846,7 @@ export default function ProfilePage() {
               {activeTab === "notifications" && (
                 <Card className="border-none shadow-lg overflow-hidden bg-white/80 dark:bg-zinc-900/80">
                   <CardContent className="p-6 space-y-6">
-                    <h3 className="text-xl font-semibold">Настройки уведомлений</h3>
+                    <h3 className="text-xl font-semibold">Настройки системы</h3>
 
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
@@ -886,6 +886,41 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       )}
+
+                      {/* Добавляем переключатель языка */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Язык интерфейса</p>
+                          <p className="text-sm text-muted-foreground">Изменить язык меню</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex border rounded-md overflow-hidden">
+                            <button
+                              onClick={() => window.dispatchEvent(new CustomEvent("changeLanguage", { detail: "ru" }))}
+                              className="px-3 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-1 data-[active=true]:bg-primary data-[active=true]:text-white"
+                              data-active={
+                                localStorage.getItem("app-language") === "ru" || !localStorage.getItem("app-language")
+                              }
+                            >
+                              RU
+                            </button>
+                            <button
+                              onClick={() => window.dispatchEvent(new CustomEvent("changeLanguage", { detail: "kz" }))}
+                              className="px-3 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-1 data-[active=true]:bg-primary data-[active=true]:text-white"
+                              data-active={localStorage.getItem("app-language") === "kz"}
+                            >
+                              KZ
+                            </button>
+                            <button
+                              onClick={() => window.dispatchEvent(new CustomEvent("changeLanguage", { detail: "en" }))}
+                              className="px-3 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-1 data-[active=true]:bg-primary data-[active=true]:text-white"
+                              data-active={localStorage.getItem("app-language") === "en"}
+                            >
+                              EN
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -10,12 +10,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
 import { VoiceInputOverlay } from "./voice-input-overlay"
+import { useLanguage } from "@/contexts/language-context"
 
-const menuItems = [
-  { name: "Календарь", icon: Calendar, href: "/dashboard" },
-  { name: "Напоминания", icon: Bell, href: "/reminders" },
-  { name: "Заметки", icon: BookMarked, href: "/notes" },
-  { name: "Профиль", icon: User2, href: "/profile" },
+const getMenuItems = (t: (key: string) => string) => [
+  { name: t("menu.calendar"), icon: Calendar, href: "/dashboard" },
+  { name: t("menu.reminders"), icon: Bell, href: "/reminders" },
+  { name: t("menu.notes"), icon: BookMarked, href: "/notes" },
+  { name: t("menu.profile"), icon: User2, href: "/profile" },
 ]
 
 export default function ThemeToggle() {
@@ -52,6 +53,8 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [transcript, setTranscript] = useState("")
   const { user, logout } = useAuth()
+  const { t } = useLanguage()
+  const menuItems = getMenuItems(t)
 
   const handleVoiceInput = () => {
     setIsVoiceOverlayOpen(true)
@@ -177,13 +180,13 @@ export function Sidebar() {
             <Mic className="h-5 w-5 text-white" />
             <div className="absolute inset-0 rounded-full shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
           </button>
-        ) : ( 
+        ) : (
           <button
             onClick={handleVoiceInput}
             className="relative flex w-full max-w-xs items-center justify-start gap-3 rounded-xl bg-primary/10 dark:bg-primary/20 backdrop-blur-sm px-4 py-3 text-left transition-transform hover:scale-105 active:scale-90"
           >
             <Mic className="h-5 w-5 text-white" />
-            <span className="text-sm font-medium text-white">Голосовой ввод</span>
+            <span className="text-sm font-medium text-white">{t("menu.voice")}</span>
             <div className="absolute inset-0 rounded-xl shadow-[0_0_15px_3px_rgba(139,92,246,0.5),inset_0_0_5px_rgba(139,92,246,0.5)]" />
           </button>
         )}

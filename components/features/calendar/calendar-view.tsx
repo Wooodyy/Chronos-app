@@ -27,6 +27,7 @@ import {
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Entry } from "@/types/entry"
+import { useLanguage } from "@/contexts/language-context"
 
 interface CalendarViewProps {
   onDateSelect: (date: Date) => void
@@ -50,6 +51,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
   const isMobile = useMediaQuery("(max-width: 640px)")
   const isSmallMobile = useMediaQuery("(max-width: 380px)")
   const today = new Date()
+  const { t } = useLanguage()
 
   // Enhance the navigation buttons with glow effect
   const handlePrevious = useCallback(() => {
@@ -477,7 +479,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                 {capitalizedMonthYear}
               </h2>
               <p className="text-xs text-muted-foreground/80 font-medium">
-                {view === "week" ? "Недельный просмотр" : "Месячный просмотр"}
+                {view === "week" ? t("calendar.weekView") : t("calendar.monthView")}
               </p>
             </div>
 
@@ -513,7 +515,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
               onClick={handleToday}
               className="h-9 px-4 rounded-lg bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary transition-all duration-200 shadow-sm border border-slate-200/50 dark:border-slate-700/50 font-medium hover:shadow-[0_0_15px_rgba(139,92,246,0.5)]"
             >
-              Сегодня
+              {t("calendar.today")}
             </Button>
 
             {/* Переключатель режимов просмотра */}
@@ -527,7 +529,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                     : "bg-white/90 dark:bg-zinc-800/90 text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-zinc-800 hover:text-primary",
                 )}
               >
-                Неделя
+                {t("calendar.week")}
               </button>
               <button
                 onClick={() => handleViewChange("month")}
@@ -538,7 +540,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
                     : "bg-white/90 dark:bg-zinc-800/90 text-muted-foreground hover:text-foreground hover:bg-white dark:hover:bg-zinc-800 hover:text-primary",
                 )}
               >
-                Месяц
+                {t("calendar.month")}
               </button>
             </div>
           </div>
@@ -558,7 +560,7 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
       {isMobile && (
         <div className="flex justify-center items-center py-1.5 text-muted-foreground text-xs bg-slate-50/80 dark:bg-zinc-800/80 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
           <ChevronLeft className="h-3 w-3 mr-1" />
-          Свайпните для навигации
+          {t("calendar.swipeToNavigate")}
           <ChevronRight className="h-3 w-3 ml-1" />
         </div>
       )}

@@ -5,10 +5,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/contexts/language-context"
 
 export function FloatingActionButton() {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const { t } = useLanguage()
 
   const toggleMenu = () => setIsOpen(!isOpen)
 
@@ -17,29 +19,31 @@ export function FloatingActionButton() {
     setIsOpen(false)
   }
 
-  const menuItems = [
+  const getMenuItems = (t: (key: string) => string) => [
     {
       icon: FileText,
-      label: "Заметка",
+      label: t("fab.note"),
       color: "bg-emerald-500",
       textColor: "text-emerald-500",
       path: "/new/note",
     },
     {
       icon: ListTodo,
-      label: "Задача",
+      label: t("fab.task"),
       color: "bg-blue-500",
       textColor: "text-blue-500",
       path: "/new/task",
     },
     {
       icon: Bell,
-      label: "Напоминание",
+      label: t("fab.reminder"),
       color: "bg-amber-500",
       textColor: "text-amber-500",
       path: "/new/reminder",
     },
   ]
+
+  const menuItems = getMenuItems(t)
 
   return (
     <div className="fixed bottom-20 right-6 z-50 md:hidden">
