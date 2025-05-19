@@ -139,6 +139,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        // Проверяем, был ли выполнен выход из системы
+        const logoutFlag = sessionStorage.getItem("force_logout")
+        if (logoutFlag === "true") {
+          // Если был выход, не загружаем пользователя
+          console.log("Force logout detected, not loading user data")
+          sessionStorage.removeItem("force_logout")
+          setIsLoading(false)
+          initialLoadDoneRef.current = true
+          return
+        }
+
         const storedUser = localStorage.getItem("chronos_user")
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser)
@@ -233,6 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.success && data.user) {
         localStorage.setItem("chronos_user", JSON.stringify(data.user))
         setUser(data.user)
+        // Удаляем флаг принудительного выхода при успешном входе
+        sessionStorage.removeItem("force_logout")
         return true
       }
 
@@ -268,6 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.success && data.user) {
         localStorage.setItem("chronos_user", JSON.stringify(data.user))
         setUser(data.user)
+        // Удаляем флаг принудительного выхода при успешной регистрации
+        sessionStorage.removeItem("force_logout")
       }
 
       return {
@@ -283,8 +298,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    // Устанавливаем флаг принудительного выхода
+    sessionStorage.setItem("force_logout", "true")
+
     // Полностью очищаем все данные из хранилищ
     clearAllStorageData()
+
+    // Очищаем все куки, связанные с аутентификацией
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+    })
 
     // Сбрасываем флаги
     dataLoadedInSessionRef.current = false

@@ -6,6 +6,7 @@ import { ru } from "date-fns/locale"
 import type { Entry } from "@/types/entry"
 import { EntryCard } from "@/components/features/entries/entry-card"
 import { CalendarDays } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface EntriesListProps {
   entries: Entry[]
@@ -14,6 +15,8 @@ interface EntriesListProps {
 }
 
 export function EntriesList({ entries, showDate = false, title }: EntriesListProps) {
+  const { t, language } = useLanguage()
+
   // Группируем записи по дате, если нужно показывать даты
   const groupedEntries = showDate
     ? entries.reduce(
@@ -47,14 +50,30 @@ export function EntriesList({ entries, showDate = false, title }: EntriesListPro
     }
   }
 
+  // Функция для определения правильного склонения слова "событие"
+  const getEventCountText = (count: number) => {
+    if (language === "ru") {
+      if (count === 1) {
+        return t("events.count.one")
+      } else if (count >= 2 && count <= 4) {
+        return t("events.count.few")
+      } else {
+        return t("events.count.many")
+      }
+    } else if (language === "kz") {
+      return t("events.count.many")
+    } else {
+      return count === 1 ? t("events.count.one") : t("events.count.many")
+    }
+  }
+
   return (
     <div className="space-y-8">
       {title && (
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-medium flex items-center gap-2">{title}</h3>
           <span className="text-sm text-muted-foreground px-2 py-1 bg-muted rounded-full">
-            {entries.length}{" "}
-            {entries.length === 1 ? "запись" : entries.length >= 2 && entries.length <= 4 ? "записи" : "записей"}
+            {entries.length} {getEventCountText(entries.length)}
           </span>
         </div>
       )}
@@ -87,10 +106,8 @@ export function EntriesList({ entries, showDate = false, title }: EntriesListPro
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
             <CalendarDays className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium mb-2">Записей не найдено</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            На выбранную дату нет записей. Создайте новую запись, нажав на кнопку "Создать".
-          </p>
+          <h3 className="text-lg font-medium mb-2">{t("events.empty.title")}</h3>
+          <p className="text-muted-foreground max-w-md mx-auto">{t("events.empty.description")}</p>
         </motion.div>
       )}
     </div>

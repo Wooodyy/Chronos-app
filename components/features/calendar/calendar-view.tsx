@@ -4,7 +4,8 @@ import type React from "react"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ru } from "date-fns/locale"
+// Добавим импорт локализаций date-fns для разных языков
+import { ru, kk, enUS } from "date-fns/locale"
 import {
   format,
   addDays,
@@ -51,7 +52,24 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
   const isMobile = useMediaQuery("(max-width: 640px)")
   const isSmallMobile = useMediaQuery("(max-width: 380px)")
   const today = new Date()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage() // Добавляем использование контекста языка
+
+  // Функция для получения локали date-fns в зависимости от выбранного языка
+  const getLocale = () => {
+    switch (language) {
+      case "ru":
+        return ru
+      case "kz":
+        return kk
+      case "en":
+        return enUS
+      default:
+        return ru
+    }
+  }
+
+  // Получаем текущую локаль
+  const currentLocale = getLocale()
 
   // Enhance the navigation buttons with glow effect
   const handlePrevious = useCallback(() => {
@@ -102,59 +120,62 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
   )
 
   // Функция для проверки, должно ли повторяющееся напоминание отображаться на указанную дату
-  const shouldShowRecurringReminder = useCallback((reminder: Entry, date: Date): boolean => {
-    // Если это не напоминание или у него нет настроек повторения, проверяем только основную дату
-    if (reminder.type !== "reminder" || !reminder.repeat_type || reminder.repeat_type === "none") {
-      return isSameDay(ensureDate(reminder.date), date)
-    }
+  const shouldShowRecurringReminder = useCallback(
+    (reminder: Entry, date: Date): boolean => {
+      // Если это не напоминание или у него нет настроек повторения, проверяем только основную дату
+      if (reminder.type !== "reminder" || !reminder.repeat_type || reminder.repeat_type === "none") {
+        return isSameDay(ensureDate(reminder.date), date)
+      }
 
-    // Преобразуем дату напоминания в объект Date, если она не является им
-    const reminderDate = ensureDate(reminder.date)
+      // Преобразуем дату напоминания в объект Date, если она не является им
+      const reminderDate = ensureDate(reminder.date)
 
-    // Проверяем, что дата не раньше начальной даты напоминания
-    if (isBefore(date, reminderDate)) {
-      return false
-    }
-
-    // Проверяем, что дата не позже даты окончания повторения (если она указана)
-    if (reminder.repeat_until && isAfter(date, ensureDate(reminder.repeat_until))) {
-      return false
-    }
-
-    // Проверяем по типу повторения
-    switch (reminder.repeat_type) {
-      case "daily":
-        // Для ежедневного повторения просто проверяем, что дата не раньше начальной
-        return true
-
-      case "weekly":
-        // Для еженедельного повторения проверяем день недели
-        if (reminder.repeat_days && reminder.repeat_days.length > 0) {
-          // Если указаны конкретные дни недели для повторения
-          const dayOfWeek = getDay(date) // 0 - воскресенье, 1 - понедельник, ...
-          return reminder.repeat_days.includes(dayOfWeek)
-        } else {
-          // Если дни недели не указаны, проверяем, что прошло целое число недель
-          const weekDiff = differenceInCalendarWeeks(date, reminderDate, { locale: ru })
-          return weekDiff >= 0 && isSameDay(addWeeks(reminderDate, weekDiff), date)
-        }
-
-      case "monthly":
-        // Для ежемесячного повторения проверяем число месяца
-        const reminderDay = reminderDate.getDate()
-        const dateDay = date.getDate()
-
-        // Проверяем, что это то же число месяца и прошло целое число месяцев
-        if (reminderDay === dateDay) {
-          const monthDiff = differenceInCalendarMonths(date, reminderDate)
-          return monthDiff >= 0
-        }
+      // Проверяем, что дата не раньше начальной даты напоминания
+      if (isBefore(date, reminderDate)) {
         return false
+      }
 
-      default:
-        return isSameDay(reminderDate, date)
-    }
-  }, [])
+      // Проверяем, что дата не позже даты окончания повторения (если она указана)
+      if (reminder.repeat_until && isAfter(date, ensureDate(reminder.repeat_until))) {
+        return false
+      }
+
+      // Проверяем по типу повторения
+      switch (reminder.repeat_type) {
+        case "daily":
+          // Для ежедневного повторения просто проверяем, что дата не раньше начальной
+          return true
+
+        case "weekly":
+          // Для еженедельного повторения проверяем день недели
+          if (reminder.repeat_days && reminder.repeat_days.length > 0) {
+            // Если указаны конкретные дни недели для повторения
+            const dayOfWeek = getDay(date) // 0 - воскресенье, 1 - понедельник, ...
+            return reminder.repeat_days.includes(dayOfWeek)
+          } else {
+            // Если дни недели не указаны, проверяем, что прошло целое число недель
+            const weekDiff = differenceInCalendarWeeks(date, reminderDate, { locale: currentLocale })
+            return weekDiff >= 0 && isSameDay(addWeeks(reminderDate, weekDiff), date)
+          }
+
+        case "monthly":
+          // Для ежемесячного повторения проверяем число месяца
+          const reminderDay = reminderDate.getDate()
+          const dateDay = date.getDate()
+
+          // Проверяем, что это то же число месяца и прошло целое число месяцев
+          if (reminderDay === dateDay) {
+            const monthDiff = differenceInCalendarMonths(date, reminderDate)
+            return monthDiff >= 0
+          }
+          return false
+
+        default:
+          return isSameDay(reminderDate, date)
+      }
+    },
+    [currentLocale],
+  )
 
   // Оптимизированная функция получения событий для дня
   const getEventsForDay = useCallback(
@@ -190,17 +211,17 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     switch (view) {
       case "week":
         return eachDayOfInterval({
-          start: startOfWeek(currentDate, { locale: ru }),
-          end: endOfWeek(currentDate, { locale: ru }),
+          start: startOfWeek(currentDate, { locale: currentLocale }),
+          end: endOfWeek(currentDate, { locale: currentLocale }),
         })
       case "month":
         const start = startOfMonth(currentDate)
         const end = endOfMonth(currentDate)
-        const firstWeek = startOfWeek(start, { locale: ru })
-        const lastWeek = endOfWeek(end, { locale: ru })
+        const firstWeek = startOfWeek(start, { locale: currentLocale })
+        const lastWeek = endOfWeek(end, { locale: currentLocale })
         return eachDayOfInterval({ start: firstWeek, end: lastWeek })
     }
-  }, [currentDate, view])
+  }, [currentDate, view, currentLocale])
 
   // Оптимизированный обработчик свайпов
   useEffect(() => {
@@ -281,13 +302,28 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     }
   }, [])
 
-  // Мемоизированные названия дней недели
-  const dayNames = useMemo(() => {
-    return eachDayOfInterval({
-      start: startOfWeek(new Date(), { locale: ru }),
-      end: endOfWeek(new Date(), { locale: ru }),
-    }).map((date) => format(date, isSmallMobile ? "EEEEE" : "EEEEEE", { locale: ru }).toUpperCase())
-  }, [isSmallMobile])
+  // Функция для получения локализованных названий дней недели
+  const getLocalizedDayNames = () => {
+    // Массив ключей для дней недели
+    const dayKeys =
+      language === "en"
+        ? ["day.sunday", "day.monday", "day.tuesday", "day.wednesday", "day.thursday", "day.friday", "day.saturday"]
+        : ["day.monday", "day.tuesday", "day.wednesday", "day.thursday", "day.friday", "day.saturday", "day.sunday"]
+
+    // Для английского языка неделя начинается с воскресенья, для русского и казахского - с понедельника
+    const startIndex = language === "en" ? 0 : 0
+
+    // Возвращаем массив локализованных названий дней
+    return Array(7)
+      .fill(0)
+      .map((_, index) => {
+        const dayIndex = (startIndex + index) % 7
+        return isSmallMobile ? t(`day.short.${dayKeys[dayIndex].split(".")[2]}`) : t(dayKeys[dayIndex])
+      })
+  }
+
+  // Мемоизированные названия дней недели с учетом локализации
+  const dayNames = useMemo(() => getLocalizedDayNames(), [language, isSmallMobile, t])
 
   // Оптимизированная функция для получения цвета типа события
   const getEventTypeColor = useCallback((type: Entry["type"], isSelected: boolean) => {
@@ -305,11 +341,40 @@ export function CalendarView({ onDateSelect, selectedDate, dbTasks }: CalendarVi
     }
   }, [])
 
-  // Мемоизированный месяц и год для отображения
-  const capitalizedMonthYear = useMemo(() => {
-    const monthYear = format(currentDate, "LLLL yyyy", { locale: ru })
-    return monthYear.charAt(0).toUpperCase() + monthYear.slice(1)
-  }, [currentDate])
+  // Функция для получения локализованного названия месяца и года
+  const getLocalizedMonthYear = (date: Date) => {
+    // Получаем месяц (0-11)
+    const monthIndex = date.getMonth()
+
+    // Массив ключей для месяцев
+    const monthKeys = [
+      "month.january",
+      "month.february",
+      "month.march",
+      "month.april",
+      "month.may",
+      "month.june",
+      "month.july",
+      "month.august",
+      "month.september",
+      "month.october",
+      "month.november",
+      "month.december",
+    ]
+
+    // Получаем локализованное название месяца
+    const month = t(monthKeys[monthIndex])
+
+    // Получаем год
+    const year = date.getFullYear()
+
+    // Возвращаем отформатированную строку
+    // Для русского и казахского первая буква месяца должна быть заглавной
+    return language === "en" ? `${month} ${year}` : `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`
+  }
+
+  // Мемоизированный месяц и год для отображения с учетом локализации
+  const capitalizedMonthYear = useMemo(() => getLocalizedMonthYear(currentDate), [currentDate, language, t])
 
   // Enhance the renderWeekView function to add glow effects to the selected date
   const renderWeekView = useCallback(() => {

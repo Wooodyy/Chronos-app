@@ -380,7 +380,7 @@ export default function ProfilePage() {
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-8 space-y-4">
         {/* Profile Header - Hero Section */}
         <div className="relative w-full mb-8">
           {/* Enhanced professional banner */}

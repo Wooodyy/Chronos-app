@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { LanguageProvider } from "@/contexts/language-context"
+import { ToastProvider } from "@/components/ui/toast-provider"
 import { cn } from "@/lib/utils"
 import { AppWrapper } from "@/components/layout/app-wrapper"
 
@@ -44,7 +45,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <LanguageProvider>
-              <AppWrapper>{children}</AppWrapper>
+              <ToastProvider>
+                <AppWrapper>{children}</AppWrapper>
+              </ToastProvider>
             </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>

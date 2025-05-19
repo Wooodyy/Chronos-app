@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListCollapse, ListTodo, Bell, BookMarked, Loader2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import type { Entry } from "@/types/entry"
-import { cn } from "@/lib/utils";
+// Добавим импорт useLanguage
+import { useLanguage } from "@/contexts/language-context"
 
 // Функция для преобразования даты из строки или объекта Date
 const ensureDate = (dateInput: string | Date): Date => {
@@ -20,6 +21,7 @@ const ensureDate = (dateInput: string | Date): Date => {
   return new Date(dateInput)
 }
 
+// Обновим компонент DashboardPage, добавив поддержку многоязычности
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isCompact, setIsCompact] = useState(false)
@@ -30,6 +32,7 @@ export default function DashboardPage() {
   const { user, refreshData } = useAuth()
   const dataFetchedRef = useRef(false)
   const userDataRefreshedRef = useRef(false)
+  const { t, language } = useLanguage() // Добавляем использование контекста языка
 
   // Добавим проверку, были ли уже загружены данные в текущей сессии
   const dashboardDataLoadedRef = useRef(false)
@@ -208,6 +211,35 @@ export default function DashboardPage() {
   const reminders = dayEntries.filter((entry) => entry.type === "reminder")
   const notes = dayEntries.filter((entry) => entry.type === "note")
 
+  // Функция для форматирования даты с учетом выбранного языка
+  const formatDateForLanguage = (date: Date) => {
+    // Получаем день месяца
+    const day = date.getDate()
+
+    // Получаем название месяца в зависимости от языка
+    let month = ""
+    const monthIndex = date.getMonth()
+    const monthKeys = [
+      "month.january",
+      "month.february",
+      "month.march",
+      "month.april",
+      "month.may",
+      "month.june",
+      "month.july",
+      "month.august",
+      "month.september",
+      "month.october",
+      "month.november",
+      "month.december",
+    ]
+
+    month = t(monthKeys[monthIndex])
+
+    // Возвращаем отформатированную дату
+    return `${day} ${month}`
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       <div className="h-16 md:hidden" />
@@ -215,8 +247,10 @@ export default function DashboardPage() {
       <div className="flex-1 p-4 md:p-8 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Календарь</h1>
-            <p className="text-muted-foreground mt-1">Добро пожаловать, {user?.name || "Пользователь"}</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+            <p className="text-muted-foreground mt-1">
+              {t("dashboard.welcome")}, {user?.name || "Пользователь"}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <AddEntryButton />
@@ -243,25 +277,25 @@ export default function DashboardPage() {
               <TabsTrigger value="all" className="flex-auto min-w-fit">
                 <span className="flex items-center gap-2">
                   <ListCollapse className="h-4 w-4" />
-                  {!isCompact && <span>Все</span>}
+                  {!isCompact && <span>{t("dashboard.all")}</span>}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="tasks" className="flex-auto min-w-fit">
                 <span className="flex items-center gap-2">
                   <ListTodo className="h-4 w-4" />
-                  {!isCompact && <span>Задачи</span>}
+                  {!isCompact && <span>{t("dashboard.tasks")}</span>}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="reminders" className="flex-auto min-w-fit">
                 <span className="flex items-center gap-2">
                   <Bell className="h-4 w-4" />
-                  {!isCompact && <span>Напоминания</span>}
+                  {!isCompact && <span>{t("dashboard.reminders")}</span>}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="notes" className="flex-auto min-w-fit">
                 <span className="flex items-center gap-2">
                   <BookMarked className="h-4 w-4" />
-                  {!isCompact && <span>Заметки</span>}
+                  {!isCompact && <span>{t("dashboard.notes")}</span>}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -269,20 +303,20 @@ export default function DashboardPage() {
             <TabsContent value="all" className="mt-0">
               <EntriesList
                 entries={dayEntries}
-                title={`Записи на ${selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}`}
+                title={`${t("dashboard.eventsFor")} ${formatDateForLanguage(selectedDate)}`}
               />
             </TabsContent>
 
             <TabsContent value="tasks" className="mt-0">
-              <EntriesList entries={tasks} title="Задачи" />
+              <EntriesList entries={tasks} title={t("dashboard.tasks")} />
             </TabsContent>
 
             <TabsContent value="reminders" className="mt-0">
-              <EntriesList entries={reminders} title="Напоминания" />
+              <EntriesList entries={reminders} title={t("dashboard.reminders")} />
             </TabsContent>
 
             <TabsContent value="notes" className="mt-0">
-              <EntriesList entries={notes} title="Заметки" />
+              <EntriesList entries={notes} title={t("dashboard.notes")} />
             </TabsContent>
           </Tabs>
         )}

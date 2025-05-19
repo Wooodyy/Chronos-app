@@ -3,14 +3,14 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Calendar, Bell, BookMarked, User2, Mic, Menu, Moon, Sun } from "lucide-react"
+import { Calendar, Bell, BookMarked, User2, Mic, Menu, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
 import { VoiceInputOverlay } from "./voice-input-overlay"
 import { useLanguage } from "@/contexts/language-context"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const getMenuItems = (t: (key: string) => string) => [
   { name: t("menu.calendar"), icon: Calendar, href: "/dashboard" },
@@ -19,31 +19,36 @@ const getMenuItems = (t: (key: string) => string) => [
   { name: t("menu.profile"), icon: User2, href: "/profile" },
 ]
 
-export default function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+// Компонент переключения языка
+function LanguageToggle() {
+  const { language, setLanguage } = useLanguage()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) return null
+  const languageOptions = [
+    { value: "ru", label: "Русский" },
+    { value: "kz", label: "Қазақша" },
+    { value: "en", label: "English" },
+  ]
 
   return (
-    <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm transition-transform hover:scale-110 active:scale-90"
-    >
-      {theme === "dark" ? <Moon className="h-5 w-5 text-yellow-300" /> : <Sun className="h-5 w-5 text-amber-500" />}
-      <div
-        className={cn(
-          "absolute inset-0 rounded-full",
-          theme === "dark"
-            ? "shadow-[0_0_10px_2px_rgba(252,211,77,0.3),inset_0_0_4px_rgba(252,211,77,0.3)]"
-            : "shadow-[0_0_10px_2px_rgba(245,158,11,0.3),inset_0_0_4px_rgba(245,158,11,0.3)]",
-        )}
-      />
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 backdrop-blur-sm transition-transform hover:scale-110 active:scale-90">
+          <Globe className="h-5 w-5 text-primary" />
+          <div className="absolute inset-0 rounded-full shadow-[0_0_10px_2px_rgba(139,92,246,0.3),inset_0_0_4px_rgba(139,92,246,0.3)]" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {languageOptions.map((option) => (
+          <DropdownMenuItem
+            key={option.value}
+            className={cn("cursor-pointer", language === option.value && "bg-primary/10 font-medium")}
+            onClick={() => setLanguage(option.value as "ru" | "kz" | "en")}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -192,7 +197,7 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* User profile */}
+      {/* User profile and language/theme toggles */}
       {!isCollapsed ? (
         <div className="relative p-4 z-10">
           <div className="flex items-center justify-between">
@@ -213,10 +218,13 @@ export function Sidebar() {
                 <p className="text-xs text-muted-foreground truncate">{user?.email || "user@example.com"}</p>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       ) : (
-        <div className="relative p-4 z-10 flex justify-center">
+        <div className="relative p-4 z-10 flex flex-col items-center gap-3">
           <Link href="/profile">
             <div className="relative transition-transform hover:scale-110 active:scale-95">
               <Avatar className="cursor-pointer border-2 border-primary/20">
@@ -228,6 +236,9 @@ export function Sidebar() {
               <div className="absolute inset-0 rounded-full shadow-[0_0_10px_2px_rgba(139,92,246,0.3),inset_0_0_4px_rgba(139,92,246,0.3)]" />
             </div>
           </Link>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+          </div>
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/contexts/auth-context"
-import { useEffect } from "react"
+import { useToast } from "@/components/ui/toast-provider"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
@@ -23,13 +23,32 @@ export default function LoginPage() {
   const { login, user } = useAuth()
   const searchParams = useSearchParams()
   const isLogout = searchParams.get("logout") === "true"
+  const { toast } = useToast()
+  const logoutToastShown = useRef(false)
 
   useEffect(() => {
     // Если пользователь уже авторизован и это не страница выхода, перенаправляем на главную
     if (user && !isLogout) {
       router.push("/dashboard")
     }
-  }, [user, router, isLogout])
+
+    // Показываем сообщение о выходе только один раз при первом рендере
+    if (isLogout && !logoutToastShown.current) {
+      logoutToastShown.current = true
+      try {
+        setTimeout(() => {
+          toast({
+            title: "Выход выполнен успешно",
+            description: "Вы вышли из своей учетной записи",
+            type: "success",
+            duration: 3000,
+          })
+        }, 100)
+      } catch (error) {
+        console.error("Toast error:", error)
+      }
+    }
+  }, [user, router, isLogout]) // Удалил toast из зависимостей
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,10 +68,28 @@ export default function LoginPage() {
         router.push("/dashboard")
       } else {
         setError("Неверный логин или пароль")
+        try {
+          toast({
+            title: "Ошибка входа",
+            description: "Неверный логин или пароль",
+            type: "error",
+          })
+        } catch (error) {
+          console.error("Toast error:", error)
+        }
       }
     } catch (err) {
       console.error("Login error:", err)
       setError("Произошла ошибка при входе")
+      try {
+        toast({
+          title: "Ошибка",
+          description: "Произошла ошибка при входе",
+          type: "error",
+        })
+      } catch (error) {
+        console.error("Toast error:", error)
+      }
     } finally {
       setIsLoggingIn(false)
     }

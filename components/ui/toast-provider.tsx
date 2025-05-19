@@ -12,7 +12,7 @@ interface ToastProps {
   title: string
   description?: string
   type: ToastType
-  duration?: number
+  duration?: number // Добавляем свойство duration в интерфейс
 }
 
 interface ToastContextType {
@@ -95,4 +95,3 @@ export function useToast() {
   }
   return context
 }
-
