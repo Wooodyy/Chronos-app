@@ -2,8 +2,6 @@
 
 import type React from "react"
 import { createContext, useContext, useCallback } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react"
 import { useNotificationStore, type NotificationType } from "@/lib/notification-store"
 
 interface NotificationContextType {
@@ -25,15 +23,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const showNotification = useCallback(
     (message: string, type: NotificationType) => {
-      addNotification(message, type)
+      // Временно отключаем добавление уведомлений
+      // addNotification(message, type)
+      console.log("Notification disabled:", message, type)
     },
-    [addNotification],
+    [
+      /* addNotification */
+    ],
   )
 
   return (
     <NotificationContext.Provider value={{ showNotification }}>
       {children}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-md">
+      {/* Временно отключаем отображение уведомлений */}
+      {/* <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-md">
         <AnimatePresence>
           {notifications.map((notification) => (
             <motion.div
@@ -73,8 +76,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             </motion.div>
           ))}
         </AnimatePresence>
-      </div>
+      </div> */}
     </NotificationContext.Provider>
   )
 }
-

@@ -63,6 +63,11 @@ export default function TaskPage() {
   // Состояние для отслеживания изменений
   const [isEdited, setIsEdited] = useState(false)
 
+  // Состояния для управления открытием/закрытием Popover
+  const [openPriority, setOpenPriority] = useState(false)
+  const [openDate, setOpenDate] = useState(false)
+  const [openTime, setOpenTime] = useState(false)
+
   // Refs для элементов редактирования
   const titleRef = useRef<HTMLInputElement>(null)
 
@@ -144,6 +149,7 @@ export default function TaskPage() {
 
   const handlePriorityChange = (value: PriorityLevel) => {
     setPriority(value)
+    setOpenPriority(false) // Закрываем Popover после выбора
     setIsEdited(true)
   }
 
@@ -154,6 +160,7 @@ export default function TaskPage() {
     updatedDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate())
 
     setDate(updatedDate)
+    setOpenDate(false) // Закрываем Popover после выбора
     setIsEdited(true)
   }
 
@@ -164,6 +171,7 @@ export default function TaskPage() {
     updatedDate.setHours(hours, minutes)
 
     setDate(updatedDate)
+    setOpenTime(false) // Закрываем Popover после выбора
     setIsEdited(true)
   }
 
@@ -451,7 +459,7 @@ export default function TaskPage() {
             </Button>
 
             {/* Дата */}
-            <Popover>
+            <Popover open={openDate} onOpenChange={setOpenDate}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Calendar className="h-3.5 w-3.5" />
@@ -481,7 +489,7 @@ export default function TaskPage() {
             </Popover>
 
             {/* Время */}
-            <Popover>
+            <Popover open={openTime} onOpenChange={setOpenTime}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Clock className="h-3.5 w-3.5" />
@@ -509,7 +517,7 @@ export default function TaskPage() {
             </Popover>
 
             {/* Приоритет */}
-            <Popover>
+            <Popover open={openPriority} onOpenChange={setOpenPriority}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className={cn("gap-2 h-8", priorityColors[priority])}>
                   <Flag className="h-3.5 w-3.5" />

@@ -76,8 +76,8 @@ export function FloatingActionButton() {
                 transition={{ delay: index * 0.05 }}
                 className="flex items-center gap-2"
               >
-                <div className="glass-effect py-2 px-3 rounded-full">
-                  <span className="text-sm font-medium">{item.label}</span>
+                <div className="glass-effect py-2 px-4 rounded-full inline-block">
+                  <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
                 </div>
                 <button
                   onClick={() => handleItemClick(item.path)}

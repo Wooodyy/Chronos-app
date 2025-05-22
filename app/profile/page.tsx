@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { ru, enUS } from "date-fns/locale"
 import { motion } from "framer-motion"
 import {
   User2,
@@ -35,12 +36,22 @@ import { ImageCropper } from "@/components/features/profile/image-cropper"
 import { useNotification } from "@/components/ui/notification"
 import { cn } from "@/lib/utils"
 import { PasswordForm } from "@/components/features/profile/password-form"
+import { useLanguage } from "@/contexts/language-context"
 
 // Contribution graph component
 const ContributionGraph = () => {
+  const { t, language } = useLanguage()
   const currentYear = new Date().getFullYear()
-  const months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
-  const days = ["Пн", "Ср", "Пт"]
+
+  // Получаем названия месяцев в зависимости от языка
+  const months = Array.from({ length: 12 }).map((_, i) =>
+    t(
+      `month.${["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"][i]}`,
+    ),
+  )
+
+  // Получаем названия дней недели в зависимости от языка
+  const days = ["monday", "wednesday", "friday"].map((day) => t(`day.${day}`))
 
   // Generate contribution data - a fixed pattern that matches the screenshot
   const generateContributions = () => {
@@ -81,7 +92,7 @@ const ContributionGraph = () => {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Активность за последний год</h3>
+        <h3 className="text-lg font-semibold">{t("profile.activity")}</h3>
         <div className="text-sm text-muted-foreground">{currentYear}</div>
       </div>
 
@@ -128,7 +139,7 @@ const ContributionGraph = () => {
 
           {/* Legend - positioned at the bottom right */}
           <div className="absolute bottom-0 right-0 flex items-center text-xs text-muted-foreground mt-4">
-            <span>Меньше</span>
+            <span>{t("profile.less")}</span>
             <div className="flex gap-1 mx-2">
               <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-zinc-800" : "bg-zinc-800")} />
               <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-900/40" : "bg-purple-900/40")} />
@@ -136,7 +147,7 @@ const ContributionGraph = () => {
               <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-600/80" : "bg-purple-600/80")} />
               <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-500" : "bg-purple-500")} />
             </div>
-            <span>Больше</span>
+            <span>{t("profile.more")}</span>
           </div>
         </div>
       </div>
@@ -146,32 +157,34 @@ const ContributionGraph = () => {
 
 // Activity overview component
 const ActivityOverview = () => {
+  const { t } = useLanguage()
+
   return (
     <div className="w-full">
-      <h3 className="text-lg font-semibold mb-4">Обзор активности</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("profile.activityOverview")}</h3>
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Activity className="h-5 w-5 text-primary" />
           <div>
-            <div className="text-sm font-medium">Создано 12 задач</div>
-            <div className="text-xs text-muted-foreground">За последний месяц</div>
+            <div className="text-sm font-medium">{t("profile.tasksCreated", { count: 12 })}</div>
+            <div className="text-xs text-muted-foreground">{t("profile.lastMonth")}</div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <Activity className="h-5 w-5 text-emerald-500" />
           <div>
-            <div className="text-sm font-medium">Завершено 8 задач</div>
-            <div className="text-xs text-muted-foreground">За последний месяц</div>
+            <div className="text-sm font-medium">{t("profile.tasksCompleted", { count: 8 })}</div>
+            <div className="text-xs text-muted-foreground">{t("profile.lastMonth")}</div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <Activity className="h-5 w-5 text-amber-500" />
           <div>
-            <div className="text-sm font-medium">Создано 5 напоминаний</div>
-            <div className="text-xs text-muted-foreground">За последний месяц</div>
+            <div className="text-sm font-medium">{t("profile.remindersCreated", { count: 5 })}</div>
+            <div className="text-xs text-muted-foreground">{t("profile.lastMonth")}</div>
           </div>
         </div>
       </div>
@@ -190,6 +203,7 @@ export default function ProfilePage() {
   const { showNotification } = useNotification()
   const userDataRefreshedRef = useRef(false)
   const router = useRouter()
+  const { t, language } = useLanguage()
 
   // Состояние для формы
   const [firstName, setFirstName] = useState("")
@@ -251,19 +265,19 @@ export default function ProfilePage() {
 
       if (data.success) {
         // Показываем уведомление
-        showNotification("Данные профиля успешно обновлены", "success")
+        showNotification(t("profile.profileUpdated"), "success")
 
         // Обновляем данные пользователя
         await updateUserData()
         setIsEditingProfile(false)
       } else {
         // Показываем уведомление об ошибке
-        showNotification(data.message || "Не удалось обновить профиль", "error")
+        showNotification(data.message || t("profile.profileUpdateError"), "error")
       }
     } catch (error) {
       console.error("Error updating profile:", error)
       // Показываем уведомление об ошибке
-      showNotification("Произошла ошибка при обновлении профиля", "error")
+      showNotification(t("profile.profileUpdateError"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -338,18 +352,18 @@ export default function ProfilePage() {
 
       if (data.success) {
         // Показываем уведомление
-        showNotification("Аватар успешно обновлен", "success")
+        showNotification(t("profile.avatarUpdated"), "success")
 
         // Обновляем данные пользователя
         await updateUserData()
       } else {
         // Показываем уведомление об ошибке
-        showNotification(data.message || "Не удалось обновить авата", "error")
+        showNotification(data.message || t("profile.avatarUpdateError"), "error")
       }
     } catch (error) {
       console.error("Error uploading avatar:", error)
       // Показываем уведомление об ошибке
-      showNotification("Произошла ошибка при загрузке аватара", "error")
+      showNotification(t("profile.avatarUploadError"), "error")
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -363,13 +377,15 @@ export default function ProfilePage() {
 
   // Форматирование даты создания аккаунта
   const formatCreatedAt = () => {
-    if (!user?.created_at) return "недавно"
+    if (!user?.created_at) return t("profile.recently")
 
     try {
       const date = new Date(user.created_at)
-      return format(date, "dd.MM.yyyy")
+      const locale = language === "ru" || language === "kz" ? ru : enUS
+      const dateFormat = language === "en" ? "MM/dd/yyyy" : "dd.MM.yyyy"
+      return format(date, dateFormat, { locale })
     } catch (error) {
-      return "недавно"
+      return t("profile.recently")
     }
   }
 
@@ -380,7 +396,7 @@ export default function ProfilePage() {
       {/* Mobile padding for header */}
       <div className="h-16 md:hidden" />
 
-      <div className="flex-1 p-4 md:p-8 space-y-4">
+      <div className="flex-1 p-4 md:p-6 w-full">
         {/* Profile Header - Hero Section */}
         <div className="relative w-full mb-8">
           {/* Enhanced professional banner */}
@@ -614,7 +630,7 @@ export default function ProfilePage() {
         <div className="mt-20">
           {/* User info section */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">{user.firstName || "Пользователь"}</h1>
+            <h1 className="text-3xl font-bold">{user.firstName || t("profile.user")}</h1>
             <h2 className="text-xl text-muted-foreground mb-4 flex items-center gap-2">
               <AtSign className="h-4 w-4" />
               {user.login || "@username"}
@@ -630,7 +646,7 @@ export default function ProfilePage() {
 
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span>Присоединился {formatCreatedAt()}</span>
+                <span>{t("profile.joined", { date: formatCreatedAt() })}</span>
               </div>
             </div>
           </div>
@@ -651,7 +667,7 @@ export default function ProfilePage() {
                   onClick={() => setActiveTab("overview")}
                 >
                   <Activity className="h-4 w-4 mr-2" />
-                  Обзор
+                  {t("profile.overview")}
                 </Button>
                 <Button
                   variant={activeTab === "account" ? "default" : "ghost"}
@@ -664,7 +680,7 @@ export default function ProfilePage() {
                   onClick={() => setActiveTab("account")}
                 >
                   <User2 className="h-4 w-4 mr-2" />
-                  Аккаунт
+                  {t("profile.account")}
                 </Button>
                 <Button
                   variant={activeTab === "notifications" ? "default" : "ghost"}
@@ -677,7 +693,7 @@ export default function ProfilePage() {
                   onClick={() => setActiveTab("notifications")}
                 >
                   <Bell className="h-4 w-4 mr-2" />
-                  Настройки
+                  {t("profile.settings")}
                 </Button>
                 <Separator className="my-2" />
                 <Button
@@ -686,7 +702,7 @@ export default function ProfilePage() {
                   onClick={logout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
-                  Выйти
+                  {t("profile.logout")}
                 </Button>
               </div>
             </div>
@@ -711,25 +727,25 @@ export default function ProfilePage() {
 
                     <Card className="border-none shadow-lg overflow-hidden bg-white/80 dark:bg-zinc-900/80">
                       <CardContent className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Популярные теги</h3>
+                        <h3 className="text-lg font-semibold mb-4">{t("profile.popularTags")}</h3>
                         <div className="flex flex-wrap gap-2">
                           <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20">
-                            работа
+                            {t("profile.tag.work")}
                           </Badge>
                           <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20">
-                            важное
+                            {t("profile.tag.important")}
                           </Badge>
                           <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20">
-                            срочно
+                            {t("profile.tag.urgent")}
                           </Badge>
                           <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20">
-                            встреча
+                            {t("profile.tag.meeting")}
                           </Badge>
                           <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20">
-                            личное
+                            {t("profile.tag.personal")}
                           </Badge>
                           <Badge className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20">
-                            проект
+                            {t("profile.tag.project")}
                           </Badge>
                         </div>
                       </CardContent>
@@ -742,11 +758,11 @@ export default function ProfilePage() {
               {activeTab === "account" && (
                 <Card className="border-none shadow-lg overflow-hidden bg-white/80 dark:bg-zinc-900/80">
                   <CardContent className="p-6 space-y-6">
-                    <h3 className="text-xl font-semibold">Информация профиля</h3>
+                    <h3 className="text-xl font-semibold">{t("profile.profileInfo")}</h3>
 
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">Имя</Label>
+                        <Label htmlFor="firstName">{t("profile.firstName")}</Label>
                         <div className="flex items-center">
                           <User2 className="h-4 w-4 mr-2 text-muted-foreground" />
                           <Input
@@ -764,7 +780,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Фамилия</Label>
+                        <Label htmlFor="lastName">{t("profile.lastName")}</Label>
                         <div className="flex items-center">
                           <User2 className="h-4 w-4 mr-2 text-muted-foreground" />
                           <Input
@@ -782,7 +798,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t("profile.email")}</Label>
                         <div className="flex items-center">
                           <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
                           <Input
@@ -807,7 +823,7 @@ export default function ProfilePage() {
                               onClick={() => setIsEditingProfile(false)}
                               className="shadow-md hover:shadow-lg transition-shadow"
                             >
-                              Отмена
+                              {t("profile.cancel")}
                             </Button>
                             <Button
                               onClick={handleSave}
@@ -815,11 +831,11 @@ export default function ProfilePage() {
                               className="bg-[#8b5cf6] hover:bg-[#7c3aed] shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-shadow"
                             >
                               {isSaving ? (
-                                <>Сохранение...</>
+                                <>{t("profile.saving")}</>
                               ) : (
                                 <>
                                   <Save className="h-4 w-4 mr-2" />
-                                  Сохранить
+                                  {t("profile.save")}
                                 </>
                               )}
                             </Button>
@@ -830,7 +846,7 @@ export default function ProfilePage() {
                             className="bg-[#8b5cf6] hover:bg-[#7c3aed] shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-shadow"
                           >
                             <Edit className="h-4 w-4 mr-2" />
-                            Редактировать
+                            {t("profile.edit")}
                           </Button>
                         )}
                       </div>
@@ -846,21 +862,21 @@ export default function ProfilePage() {
               {activeTab === "notifications" && (
                 <Card className="border-none shadow-lg overflow-hidden bg-white/80 dark:bg-zinc-900/80">
                   <CardContent className="p-6 space-y-6">
-                    <h3 className="text-xl font-semibold">Настройки системы</h3>
+                    <h3 className="text-xl font-semibold">{t("profile.systemSettings")}</h3>
 
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Email уведомления</p>
-                          <p className="text-sm text-muted-foreground">Получать уведомления по электронной почте</p>
+                          <p className="font-medium">{t("profile.emailNotifications")}</p>
+                          <p className="text-sm text-muted-foreground">{t("profile.emailNotificationsDesc")}</p>
                         </div>
                         <Switch defaultChecked />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Напоминания о задачах</p>
-                          <p className="text-sm text-muted-foreground">Получать напоминания о предстоящих задачах</p>
+                          <p className="font-medium">{t("profile.taskReminders")}</p>
+                          <p className="text-sm text-muted-foreground">{t("profile.taskRemindersDesc")}</p>
                         </div>
                         <Switch defaultChecked />
                       </div>
@@ -868,8 +884,8 @@ export default function ProfilePage() {
                       {mounted && (
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium">Темная тема</p>
-                            <p className="text-sm text-muted-foreground">Переключение между светлой и темной темой</p>
+                            <p className="font-medium">{t("profile.darkTheme")}</p>
+                            <p className="text-sm text-muted-foreground">{t("profile.darkThemeDesc")}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <motion.div
@@ -890,8 +906,8 @@ export default function ProfilePage() {
                       {/* Добавляем переключатель языка */}
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Язык интерфейса</p>
-                          <p className="text-sm text-muted-foreground">Изменить язык меню</p>
+                          <p className="font-medium">{t("profile.language")}</p>
+                          <p className="text-sm text-muted-foreground">{t("profile.languageDesc")}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex border rounded-md overflow-hidden">
@@ -932,12 +948,20 @@ export default function ProfilePage() {
 
       {/* Image cropper component */}
       {imageToCrop && (
-        <ImageCropper
-          image={imageToCrop}
-          onCropComplete={handleCropComplete}
-          onCancel={handleCropCancel}
-          open={cropperOpen}
-        />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <Card className="max-w-2xl w-full">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold mb-2">{t("profile.cropAvatar")}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{t("profile.cropAvatarDesc")}</p>
+              <ImageCropper
+                image={imageToCrop}
+                onCropComplete={handleCropComplete}
+                onCancel={handleCropCancel}
+                open={cropperOpen}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Mobile padding for bottom navigation */}

@@ -6,12 +6,24 @@ import { EntriesList } from "@/components/features/entries/entries-list"
 import { AddEntryButton } from "@/components/features/entries/add-entry-button"
 import { isSameDay, isAfter, isBefore, getDay, getDate } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListCollapse, ListTodo, Bell, BookMarked, Loader2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import type { Entry } from "@/types/entry"
-// Добавим импорт useLanguage
 import { useLanguage } from "@/contexts/language-context"
+import { cn } from "@/lib/utils"
+import { DotLottieReact } from "@lottiefiles/dotlottie-react"
+
+// Компонент для предзагрузки анимации
+const AnimationPreloader = () => {
+  return (
+    <div className="hidden">
+      <DotLottieReact
+        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Animation%20-%201742562962548%20%281%29-OdSF1TwBXuXhQeyASo51sRaAZhPggB.json"
+        autoplay={false}
+      />
+    </div>
+  )
+}
 
 // Функция для преобразования даты из строки или объекта Date
 const ensureDate = (dateInput: string | Date): Date => {
@@ -21,10 +33,61 @@ const ensureDate = (dateInput: string | Date): Date => {
   return new Date(dateInput)
 }
 
-// Обновим компонент DashboardPage, добавив поддержку многоязычности
+// Компонент фильтра
+const FilterTabs = ({
+  activeTab,
+  onTabChange,
+  allCount,
+  tasksCount,
+  remindersCount,
+  notesCount,
+}: {
+  activeTab: string
+  onTabChange: (tab: string) => void
+  allCount: number
+  tasksCount: number
+  remindersCount: number
+  notesCount: number
+}) => {
+  const { t } = useLanguage()
+
+  const tabs = [
+    { id: "all", icon: ListCollapse, label: t("dashboard.all"), count: allCount },
+    { id: "tasks", icon: ListTodo, label: t("dashboard.tasks"), count: tasksCount },
+    { id: "reminders", icon: Bell, label: t("dashboard.reminders"), count: remindersCount },
+    { id: "notes", icon: BookMarked, label: t("dashboard.notes"), count: notesCount },
+  ]
+
+  return (
+    <div className="bg-foreground/5 backdrop-blur-sm rounded-lg p-1 flex w-full max-w-max mx-auto">
+      {tabs.map((tab) => {
+        const Icon = tab.icon
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={cn(
+              "flex items-center justify-center gap-2 flex-1 py-2 px-3 rounded-md transition-all text-sm font-medium",
+              activeTab === tab.id
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50",
+            )}
+            aria-selected={activeTab === tab.id}
+            role="tab"
+          >
+            <Icon className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden xs:inline whitespace-nowrap">{tab.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Обновим компонент DashboardPage
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [isCompact, setIsCompact] = useState(false)
+  const [activeTab, setActiveTab] = useState("all")
   const [dbTasks, setDbTasks] = useState<Entry[]>([])
   const [dbNotes, setDbNotes] = useState<Entry[]>([])
   const [dbReminders, setDbReminders] = useState<Entry[]>([])
@@ -32,21 +95,8 @@ export default function DashboardPage() {
   const { user, refreshData } = useAuth()
   const dataFetchedRef = useRef(false)
   const userDataRefreshedRef = useRef(false)
-  const { t, language } = useLanguage() // Добавляем использование контекста языка
-
-  // Добавим проверку, были ли уже загружены данные в текущей сессии
+  const { t } = useLanguage()
   const dashboardDataLoadedRef = useRef(false)
-
-  // Эффект для обработки изменения размера экрана
-  useEffect(() => {
-    const handleResize = () => {
-      setIsCompact(window.innerWidth < 500)
-    }
-
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
 
   // Изменим useEffect для загрузки данных
   useEffect(() => {
@@ -240,8 +290,39 @@ export default function DashboardPage() {
     return `${day} ${month}`
   }
 
+  // Получаем отфильтрованные записи в зависимости от активной вкладки
+  const getFilteredEntries = () => {
+    switch (activeTab) {
+      case "tasks":
+        return tasks
+      case "reminders":
+        return reminders
+      case "notes":
+        return notes
+      default:
+        return dayEntries
+    }
+  }
+
+  // Получаем заголовок для списка записей
+  const getEntriesTitle = () => {
+    switch (activeTab) {
+      case "tasks":
+        return t("dashboard.tasks")
+      case "reminders":
+        return t("dashboard.reminders")
+      case "notes":
+        return t("dashboard.notes")
+      default:
+        return `${t("dashboard.eventsFor")} ${formatDateForLanguage(selectedDate)}`
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-full">
+      {/* Компонент для предзагрузки анимации */}
+      <AnimationPreloader />
+
       <div className="h-16 md:hidden" />
 
       <div className="flex-1 p-4 md:p-8 space-y-4">
@@ -272,53 +353,18 @@ export default function DashboardPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="w-full max-w-lg mx-auto flex flex-wrap gap-2 mb-6">
-              <TabsTrigger value="all" className="flex-auto min-w-fit">
-                <span className="flex items-center gap-2">
-                  <ListCollapse className="h-4 w-4" />
-                  {!isCompact && <span>{t("dashboard.all")}</span>}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="flex-auto min-w-fit">
-                <span className="flex items-center gap-2">
-                  <ListTodo className="h-4 w-4" />
-                  {!isCompact && <span>{t("dashboard.tasks")}</span>}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="reminders" className="flex-auto min-w-fit">
-                <span className="flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  {!isCompact && <span>{t("dashboard.reminders")}</span>}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="notes" className="flex-auto min-w-fit">
-                <span className="flex items-center gap-2">
-                  <BookMarked className="h-4 w-4" />
-                  {!isCompact && <span>{t("dashboard.notes")}</span>}
-                </span>
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            <FilterTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              allCount={dayEntries.length}
+              tasksCount={tasks.length}
+              remindersCount={reminders.length}
+              notesCount={notes.length}
+            />
 
-            <TabsContent value="all" className="mt-0">
-              <EntriesList
-                entries={dayEntries}
-                title={`${t("dashboard.eventsFor")} ${formatDateForLanguage(selectedDate)}`}
-              />
-            </TabsContent>
-
-            <TabsContent value="tasks" className="mt-0">
-              <EntriesList entries={tasks} title={t("dashboard.tasks")} />
-            </TabsContent>
-
-            <TabsContent value="reminders" className="mt-0">
-              <EntriesList entries={reminders} title={t("dashboard.reminders")} />
-            </TabsContent>
-
-            <TabsContent value="notes" className="mt-0">
-              <EntriesList entries={notes} title={t("dashboard.notes")} />
-            </TabsContent>
-          </Tabs>
+            <EntriesList entries={getFilteredEntries()} title={getEntriesTitle()} />
+          </div>
         )}
       </div>
 

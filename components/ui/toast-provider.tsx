@@ -1,9 +1,6 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode } from "react"
-import { Toast } from "@/components/ui/toast"
-import { AnimatePresence, motion } from "framer-motion"
-import { X } from "lucide-react"
 
 type ToastType = "success" | "error" | "warning" | "info"
 
@@ -26,15 +23,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastProps[]>([])
 
   const toast = (props: Omit<ToastProps, "id">) => {
-    const id = Math.random().toString(36).substring(2, 9)
-    const newToast = { ...props, id }
-    setToasts((prev) => [...prev, newToast])
+    // Временно отключаем добавление тостов
+    // const id = Math.random().toString(36).substring(2, 9)
+    // const newToast = { ...props, id }
+    // setToasts((prev) => [...prev, newToast])
+    console.log("Toast disabled:", props.title, props.description)
 
     // Автоматически удаляем уведомление через заданное время или через 5 секунд по умолчанию
-    const duration = props.duration || 5000
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, duration)
+    // const duration = props.duration || 5000
+    // setTimeout(() => {
+    //   setToasts((prev) => prev.filter((t) => t.id !== id))
+    // }, duration)
   }
 
   const dismiss = (id: string) => {
@@ -44,7 +43,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast, dismiss }}>
       {children}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
+      {/* Временно отключаем отображение тостов */}
+      {/* <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -83,7 +83,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </motion.div>
           ))}
         </AnimatePresence>
-      </div>
+      </div> */}
     </ToastContext.Provider>
   )
 }

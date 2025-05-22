@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useLanguage } from "@/contexts/language-context"
 import { Plus, FileText, ListTodo, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion"
 export function AddEntryButton() {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <div className="hidden md:block relative z-50">
@@ -27,11 +29,14 @@ export function AddEntryButton() {
 
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <Button className="gap-2 relative z-50" style={{
+          <Button
+            className="gap-2 relative z-50"
+            style={{
               boxShadow: "0 0 15px rgba(147, 51, 234, 0.5)",
-            }}>
+            }}
+          >
             <Plus className="h-4 w-4" />
-            Создать
+            {t("addEntry.create")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 z-50">
@@ -46,8 +51,8 @@ export function AddEntryButton() {
               <FileText className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="flex flex-col">
-              <span>Заметка</span>
-              <span className="text-xs text-muted-foreground">Создать новую заметку</span>
+              <span>{t("fab.note")}</span>
+              <span className="text-xs text-muted-foreground">{t("addEntry.newNote")}</span>
             </div>
           </DropdownMenuItem>
 
@@ -62,8 +67,8 @@ export function AddEntryButton() {
               <ListTodo className="h-4 w-4 text-blue-500" />
             </div>
             <div className="flex flex-col">
-              <span>Задача</span>
-              <span className="text-xs text-muted-foreground">Создать новую задачу</span>
+              <span>{t("fab.task")}</span>
+              <span className="text-xs text-muted-foreground">{t("addEntry.newTask")}</span>
             </div>
           </DropdownMenuItem>
 
@@ -78,8 +83,8 @@ export function AddEntryButton() {
               <Bell className="h-4 w-4 text-amber-500" />
             </div>
             <div className="flex flex-col">
-              <span>Напоминание</span>
-              <span className="text-xs text-muted-foreground">Создать новое напоминание</span>
+              <span>{t("fab.reminder")}</span>
+              <span className="text-xs text-muted-foreground">{t("addEntry.newReminder")}</span>
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -87,4 +92,3 @@ export function AddEntryButton() {
     </div>
   )
 }
-

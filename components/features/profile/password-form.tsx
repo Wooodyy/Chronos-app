@@ -10,15 +10,20 @@ import { Input } from "@/components/ui/input"
 import { Lock, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotification } from "@/components/ui/notification"
+import { useLanguage } from "@/contexts/language-context"
 
 const passwordFormSchema = z
   .object({
     currentPassword: z.string(),
-    newPassword: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
-    confirmPassword: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
+    newPassword: z.string().min(6, {
+      message: "profile.passwordMinLength",
+    }),
+    confirmPassword: z.string().min(6, {
+      message: "profile.passwordMinLength",
+    }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Пароли не совпадают",
+    message: "profile.passwordMismatch",
     path: ["confirmPassword"],
   })
 
@@ -26,6 +31,7 @@ export function PasswordForm() {
   const [isChanging, setIsChanging] = useState(false)
   const { user } = useAuth()
   const { showNotification } = useNotification()
+  const { t } = useLanguage()
 
   // Password visibility states
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -69,14 +75,14 @@ export function PasswordForm() {
       const result = await response.json()
 
       if (result.success) {
-        showNotification("Пароль успешно изменен", "success")
+        showNotification(t("profile.passwordUpdated"), "success")
         form.reset()
       } else {
-        showNotification(result.message || "Не удалось изменить пароль", "error")
+        showNotification(result.message || t("profile.passwordUpdateError"), "error")
       }
     } catch (error) {
       console.error("Error changing password:", error)
-      showNotification("Произошла ошибка при изменении пароля", "error")
+      showNotification(t("profile.passwordUpdateError"), "error")
     } finally {
       setIsChanging(false)
     }
@@ -84,7 +90,7 @@ export function PasswordForm() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold">Изменение пароля</h3>
+      <h3 className="text-xl font-semibold">{t("profile.passwordChange")}</h3>
 
       <Form {...form}>
         <form id="password-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -93,7 +99,7 @@ export function PasswordForm() {
             name="currentPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Текущий пароль</FormLabel>
+                <FormLabel>{t("profile.currentPassword")}</FormLabel>
                 <div className="flex items-center relative">
                   <Lock className="h-4 w-4 mr-2 text-muted-foreground absolute left-2" />
                   <FormControl>
@@ -121,7 +127,7 @@ export function PasswordForm() {
             name="newPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Новый пароль</FormLabel>
+                <FormLabel>{t("profile.newPassword")}</FormLabel>
                 <div className="flex items-center relative">
                   <Lock className="h-4 w-4 mr-2 text-muted-foreground absolute left-2" />
                   <FormControl>
@@ -149,7 +155,7 @@ export function PasswordForm() {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Подтвердите новый пароль</FormLabel>
+                <FormLabel>{t("profile.confirmPassword")}</FormLabel>
                 <div className="flex items-center relative">
                   <Lock className="h-4 w-4 mr-2 text-muted-foreground absolute left-2" />
                   <FormControl>
@@ -178,7 +184,7 @@ export function PasswordForm() {
               disabled={isChanging || !isFormComplete}
               className="bg-[#8b5cf6] hover:bg-[#7c3aed] shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-shadow"
             >
-              {isChanging ? "Изменение..." : "Изменить пароль"}
+              {isChanging ? t("profile.saving") : t("profile.passwordChange")}
             </Button>
           </div>
         </form>
