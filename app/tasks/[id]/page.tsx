@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { ru } from "date-fns/locale"
+import { ru, kk, enUS } from "date-fns/locale"
 import {
   ArrowLeft,
   Calendar,
@@ -40,10 +40,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { Entry, PriorityLevel } from "@/types/entry"
 import { useNotification } from "@/components/ui/notification"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function TaskPage() {
   const router = useRouter()
   const params = useParams()
+  const { t, language } = useLanguage()
   const [task, setTask] = useState<Entry | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
@@ -76,6 +78,18 @@ export default function TaskPage() {
 
   const searchParams = useParams()
   const [source, setSource] = useState("dashboard")
+
+  // Получаем локаль для форматирования дат
+  const getDateLocale = () => {
+    switch (language) {
+      case "kz":
+        return kk
+      case "en":
+        return enUS
+      default:
+        return ru
+    }
+  }
 
   useEffect(() => {
     // Get the source from URL query parameters
@@ -201,7 +215,7 @@ export default function TaskPage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground">Загрузка...</p>
+        <p className="text-muted-foreground">{t("task.loading")}</p>
       </div>
     )
   }
@@ -212,12 +226,10 @@ export default function TaskPage() {
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
           <Calendar className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h2 className="text-2xl font-bold">Задача не найдена</h2>
-        <p className="text-muted-foreground text-center max-w-md">
-          Задача, которую вы ищете, не существует или была удалена.
-        </p>
+        <h2 className="text-2xl font-bold">{t("task.notFound")}</h2>
+        <p className="text-muted-foreground text-center max-w-md">{t("task.notFoundDesc")}</p>
         <Button onClick={() => router.push("/tasks")} className="mt-4">
-          Вернуться к задачам
+          {t("task.backToTasks")}
         </Button>
       </div>
     )
@@ -230,9 +242,9 @@ export default function TaskPage() {
   }
 
   const priorityLabels = {
-    low: "Низкий",
-    medium: "Средний",
-    high: "Высокий",
+    low: t("task.priorityLow"),
+    medium: t("task.priorityMedium"),
+    high: t("task.priorityHigh"),
   }
 
   // Обновляем функцию handleDelete
@@ -243,14 +255,14 @@ export default function TaskPage() {
       })
 
       if (response.ok) {
-        showNotification("Задача успешно удалена", "success")
+        showNotification(t("task.deleteSuccess"), "success")
         router.push(source === "tasks" ? "/tasks" : "/dashboard")
       } else {
-        showNotification("Не удалось удалить задачу", "error")
+        showNotification(t("task.deleteError"), "error")
       }
     } catch (error) {
       console.error("Error deleting task:", error)
-      showNotification("Ошибка при удалении задачи", "error")
+      showNotification(t("task.deleteErrorGeneral"), "error")
     }
   }
 
@@ -267,13 +279,13 @@ export default function TaskPage() {
 
       if (response.ok) {
         setIsCompleted(!isCompleted)
-        showNotification(`Задача отмечена как ${!isCompleted ? "выполненная" : "невыполненная"}`, "success")
+        showNotification(!isCompleted ? t("task.completedSuccess") : t("task.uncompletedSuccess"), "success")
       } else {
-        showNotification("Не удалось обновить статус задачи", "error")
+        showNotification(t("task.statusUpdateError"), "error")
       }
     } catch (error) {
       console.error("Error updating task:", error)
-      showNotification("Ошибка при обновлении статуса задачи", "error")
+      showNotification(t("task.statusUpdateErrorGeneral"), "error")
     }
   }
 
@@ -303,8 +315,8 @@ export default function TaskPage() {
       const data = await response.json()
 
       if (!data.success) {
-        setError(data.message || "Не удалось обновить задачу")
-        showNotification(data.message || "Не удалось обновить задачу", "error")
+        setError(data.message || t("task.updateError"))
+        showNotification(data.message || t("task.updateError"), "error")
         setIsSaving(false)
         return
       } else {
@@ -317,7 +329,7 @@ export default function TaskPage() {
           priority,
           tags,
         })
-        showNotification("Задача успешно обновлена", "success")
+        showNotification(t("task.updateSuccess"), "success")
       }
 
       // Обновляем время последнего сохранения
@@ -327,8 +339,8 @@ export default function TaskPage() {
       setIsEdited(false)
     } catch (error) {
       console.error("Error updating task:", error)
-      setError("Произошла ошибка при обновлении задачи")
-      showNotification("Произошла ошибка при обновлении задачи", "error")
+      setError(t("task.updateErrorGeneral"))
+      showNotification(t("task.updateErrorGeneral"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -357,19 +369,19 @@ export default function TaskPage() {
               className="ml-2 h-9 px-4 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center"
             >
               <ListTodo className="h-4 w-4 mr-2" />
-              Задача
+              {t("task.task")}
             </Badge>
 
             {lastSaved && (
               <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
-                Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
+                {t("task.saved", { time: format(lastSaved, "HH:mm", { locale: getDateLocale() }) })}
               </span>
             )}
 
             {isSaving && (
               <div className="flex items-center text-xs text-muted-foreground ml-2 hidden md:flex">
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                Сохранение...
+                {t("task.saving")}
               </div>
             )}
           </div>
@@ -389,12 +401,12 @@ export default function TaskPage() {
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Сохранение...
+                    {t("task.saving")}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Сохранить
+                    {t("task.save")}
                   </>
                 )}
               </Button>
@@ -412,7 +424,7 @@ export default function TaskPage() {
                   className="text-red-600 dark:text-red-400"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Удалить
+                  {t("task.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -432,7 +444,7 @@ export default function TaskPage() {
               value={title}
               onChange={handleTitleChange}
               className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Без заголовка"
+              placeholder={t("task.noTitle")}
             />
           </div>
 
@@ -448,12 +460,12 @@ export default function TaskPage() {
               {isCompleted ? (
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Выполнено
+                  {t("task.completed")}
                 </>
               ) : (
                 <>
                   <Circle className="h-3.5 w-3.5" />
-                  Выполнить
+                  {t("task.complete")}
                 </>
               )}
             </Button>
@@ -463,14 +475,14 @@ export default function TaskPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Calendar className="h-3.5 w-3.5" />
-                  {date ? format(date, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
+                  {date ? format(date, "d MMMM yyyy", { locale: getDateLocale() }) : t("task.selectDate")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Дата</label>
+                      <label className="text-sm font-medium">{t("task.date")}</label>
                       <Input
                         type="date"
                         value={date ? format(date, "yyyy-MM-dd") : ""}
@@ -493,14 +505,14 @@ export default function TaskPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Clock className="h-3.5 w-3.5" />
-                  {date ? format(date, "HH:mm", { locale: ru }) : "00:00"}
+                  {date ? format(date, "HH:mm", { locale: getDateLocale() }) : "00:00"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Время</label>
+                      <label className="text-sm font-medium">{t("task.time")}</label>
                       <Input
                         type="time"
                         value={date ? format(date, "HH:mm") : ""}
@@ -533,7 +545,7 @@ export default function TaskPage() {
                     onClick={() => handlePriorityChange("low")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Низкий
+                    {t("task.priorityLow")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -542,7 +554,7 @@ export default function TaskPage() {
                     onClick={() => handlePriorityChange("medium")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Средний
+                    {t("task.priorityMedium")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -551,7 +563,7 @@ export default function TaskPage() {
                     onClick={() => handlePriorityChange("high")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Высокий
+                    {t("task.priorityHigh")}
                   </Button>
                 </div>
               </PopoverContent>
@@ -563,7 +575,7 @@ export default function TaskPage() {
             <Textarea
               value={description}
               onChange={handleDescriptionChange}
-              placeholder="Добавьте описание..."
+              placeholder={t("task.addDescription")}
               className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
             />
           </div>
@@ -572,7 +584,7 @@ export default function TaskPage() {
           <div className="pt-4 border-t">
             <div className="flex items-center mb-2">
               <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span className="text-sm font-medium">Теги</span>
+              <span className="text-sm font-medium">{t("task.tags")}</span>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -598,7 +610,7 @@ export default function TaskPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={handleNewTagKeyDown}
                   className="h-7 px-2 w-32 text-sm"
-                  placeholder="Новый тег"
+                  placeholder={t("task.newTag")}
                 />
                 <Button
                   variant="ghost"
@@ -621,15 +633,13 @@ export default function TaskPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие нельзя отменить. Задача будет навсегда удалена из вашей учетной записи.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("task.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("task.deleteConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>{t("task.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Удалить
+              {t("task.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

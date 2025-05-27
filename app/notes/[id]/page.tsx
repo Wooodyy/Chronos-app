@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { ru } from "date-fns/locale"
+import { ru, kk, enUS } from "date-fns/locale"
 import { ArrowLeft, FileText, Trash2, Loader2, Tag, MoreHorizontal, Plus, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,11 +25,13 @@ import type { Entry } from "@/types/entry"
 import { RichTextEditor } from "@/components/features/editor/rich-text-editor"
 import { useNotification } from "@/components/ui/notification"
 import { useAuth } from "@/contexts/auth-context"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function NotePage() {
   const router = useRouter()
   const params = useParams()
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const [source, setSource] = useState("dashboard")
   const [note, setNote] = useState<Entry | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -53,6 +55,18 @@ export default function NotePage() {
   // Добавляем использование хука в компоненте
   const { showNotification } = useNotification()
 
+  // Функция для получения локали даты
+  const getDateLocale = () => {
+    switch (language) {
+      case "kz":
+        return kk
+      case "en":
+        return enUS
+      default:
+        return ru
+    }
+  }
+
   // Проверяем авторизацию
   useEffect(() => {
     if (!user) {
@@ -74,20 +88,20 @@ export default function NotePage() {
             router.push("/notes")
             return
           }
-          throw new Error("Ошибка при загрузке заметки")
+          throw new Error(t("note.loadError"))
         }
 
         const data = await response.json()
 
         if (!data.success) {
-          throw new Error(data.message || "Заметка не найдена")
+          throw new Error(data.message || t("note.notFound"))
         }
 
         setNote(data.note)
         initializeFormFields(data.note)
       } catch (error) {
         console.error("Ошибка при загрузке заметки:", error)
-        showNotification("Не удалось загрузить заметку", "error")
+        showNotification(t("note.loadError"), "error")
         router.push("/notes")
       } finally {
         setIsLoading(false)
@@ -102,7 +116,7 @@ export default function NotePage() {
     if (sourceParam) {
       setSource(sourceParam)
     }
-  }, [params.id, router, user, showNotification])
+  }, [params.id, router, user, showNotification, t])
 
   // Функция для инициализации полей формы
   const initializeFormFields = (note: Entry) => {
@@ -157,14 +171,14 @@ export default function NotePage() {
       const data = await response.json()
 
       if (!data.success) {
-        throw new Error(data.message || "Ошибка при удалении заметки")
+        throw new Error(data.message || t("note.deleteError"))
       }
 
-      showNotification("Заметка успешно удалена", "success")
+      showNotification(t("note.deleteSuccess"), "success")
       router.push(source === "notes" ? "/notes" : "/dashboard")
     } catch (error) {
       console.error("Error deleting note:", error)
-      showNotification("Произошла ошибка при удалении заметки", "error")
+      showNotification(t("note.deleteError"), "error")
     }
   }
 
@@ -191,7 +205,7 @@ export default function NotePage() {
       const data = await response.json()
 
       if (!data.success) {
-        throw new Error(data.message || "Ошибка при обновлении заметки")
+        throw new Error(data.message || t("note.updateError"))
       }
 
       // Обновляем локальное состояние
@@ -202,13 +216,13 @@ export default function NotePage() {
         tags,
       })
 
-      showNotification("Заметка успешно обновлена", "success")
+      showNotification(t("note.updateSuccess"), "success")
       setLastSaved(new Date())
       setIsEdited(false)
     } catch (error) {
       console.error("Error updating note:", error)
-      setError(error instanceof Error ? error.message : "Произошла ошибка при обновлении заметки")
-      showNotification("Произошла ошибка при обновлении заметки", "error")
+      setError(error instanceof Error ? error.message : t("note.updateError"))
+      showNotification(t("note.updateError"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -218,7 +232,7 @@ export default function NotePage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground">Загрузка...</p>
+        <p className="text-muted-foreground">{t("note.loading")}</p>
       </div>
     )
   }
@@ -250,19 +264,19 @@ export default function NotePage() {
               className="ml-2 h-9 px-4 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Заметка
+              {t("note.note")}
             </Badge>
 
             {lastSaved && (
               <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
-                Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
+                {t("note.saved", { time: format(lastSaved, "HH:mm", { locale: getDateLocale() }) })}
               </span>
             )}
 
             {isSaving && (
               <div className="flex items-center text-xs text-muted-foreground ml-2 hidden md:flex">
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                Сохранение...
+                {t("note.saving")}
               </div>
             )}
           </div>
@@ -282,12 +296,12 @@ export default function NotePage() {
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Сохранение...
+                    {t("note.saving")}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Сохранить
+                    {t("note.save")}
                   </>
                 )}
               </Button>
@@ -305,7 +319,7 @@ export default function NotePage() {
                   className="text-red-600 dark:text-red-400"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Удалить
+                  {t("note.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -325,7 +339,7 @@ export default function NotePage() {
               value={title}
               onChange={handleTitleChange}
               className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Без заголовка"
+              placeholder={t("note.noTitle")}
             />
           </div>
 
@@ -354,7 +368,7 @@ export default function NotePage() {
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyDown={handleNewTagKeyDown}
                 className="h-7 px-2 w-32 text-sm border-none focus-visible:ring-0"
-                placeholder="Новый тег"
+                placeholder={t("note.newTag")}
               />
               <Button
                 variant="ghost"
@@ -373,7 +387,7 @@ export default function NotePage() {
             <RichTextEditor
               value={content}
               onChange={handleContentChange}
-              placeholder="Начните писать содержимое заметки..."
+              placeholder={t("note.addContent")}
               className="border-none shadow-none"
               minHeight="300px"
             />
@@ -387,15 +401,13 @@ export default function NotePage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие нельзя отменить. Заметка будет навсегда удалена из вашей учетной записи.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("note.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("note.deleteConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>{t("note.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Удалить
+              {t("note.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { ru } from "date-fns/locale"
+import { ru, kk, enUS } from "date-fns/locale"
 import {
   ArrowLeft,
   Calendar,
@@ -39,10 +39,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { Entry, PriorityLevel, RepeatType } from "@/types/entry"
 import { useNotification } from "@/components/ui/notification"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function ReminderPage() {
   const router = useRouter()
   const params = useParams()
+  const { t, language } = useLanguage()
   const [reminder, setReminder] = useState<Entry | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -72,6 +74,20 @@ export default function ReminderPage() {
   const { showNotification } = useNotification()
 
   const [source, setSource] = useState("dashboard")
+
+  // Функция для получения локали даты
+  const getDateLocale = () => {
+    switch (language) {
+      case "ru":
+        return ru
+      case "kz":
+        return kk
+      case "en":
+        return enUS
+      default:
+        return ru
+    }
+  }
 
   useEffect(() => {
     // Get the source from URL query parameters
@@ -228,7 +244,7 @@ export default function ReminderPage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground">Загрузка...</p>
+        <p className="text-muted-foreground">{t("reminder.loading")}</p>
       </div>
     )
   }
@@ -239,12 +255,10 @@ export default function ReminderPage() {
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
           <Bell className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h2 className="text-2xl font-bold">Напоминание не найдено</h2>
-        <p className="text-muted-foreground text-center max-w-md">
-          Напоминание, которое вы ищете, не существует или было удалено.
-        </p>
+        <h2 className="text-2xl font-bold">{t("reminder.notFound")}</h2>
+        <p className="text-muted-foreground text-center max-w-md">{t("reminder.notFoundDesc")}</p>
         <Button onClick={() => router.push("/reminders")} className="mt-4">
-          Вернуться к напоминаниям
+          {t("reminder.backToReminders")}
         </Button>
       </div>
     )
@@ -257,26 +271,26 @@ export default function ReminderPage() {
   }
 
   const priorityLabels = {
-    low: "Низкий",
-    medium: "Средний",
-    high: "Высокий",
+    low: t("reminder.priorityLow"),
+    medium: t("reminder.priorityMedium"),
+    high: t("reminder.priorityHigh"),
   }
 
   const repeatTypeLabels = {
-    none: "Не повторяется",
-    daily: "Ежедневно",
-    weekly: "Еженедельно",
-    monthly: "Ежемесячно",
+    none: t("reminder.repeatNone"),
+    daily: t("reminder.repeatDaily"),
+    weekly: t("reminder.repeatWeekly"),
+    monthly: t("reminder.repeatMonthly"),
   }
 
   const weekDays = [
-    { value: 1, label: "Пн" },
-    { value: 2, label: "Вт" },
-    { value: 3, label: "Ср" },
-    { value: 4, label: "Чт" },
-    { value: 5, label: "Пт" },
-    { value: 6, label: "Сб" },
-    { value: 0, label: "Вс" },
+    { value: 1, label: t("day.monday") },
+    { value: 2, label: t("day.tuesday") },
+    { value: 3, label: t("day.wednesday") },
+    { value: 4, label: t("day.thursday") },
+    { value: 5, label: t("day.friday") },
+    { value: 6, label: t("day.saturday") },
+    { value: 0, label: t("day.sunday") },
   ]
 
   // Обновляем функцию handleDelete
@@ -287,14 +301,14 @@ export default function ReminderPage() {
       })
 
       if (response.ok) {
-        showNotification("Напоминание успешно удалено", "success")
+        showNotification(t("reminder.deleteSuccess"), "success")
         router.push(source === "reminders" ? "/reminders" : "/dashboard")
       } else {
-        showNotification("Не удалось удалить напоминание", "error")
+        showNotification(t("reminder.deleteError"), "error")
       }
     } catch (error) {
       console.error("Error deleting reminder:", error)
-      showNotification("Ошибка при удалении напоминания", "error")
+      showNotification(t("reminder.deleteErrorGeneral"), "error")
     }
   }
 
@@ -328,8 +342,8 @@ export default function ReminderPage() {
       const data = await response.json()
 
       if (!data.success) {
-        setError(data.message || "Не удалось обновить напоминание")
-        showNotification(data.message || "Не удалось обновить напоминание", "error")
+        setError(data.message || t("reminder.updateError"))
+        showNotification(data.message || t("reminder.updateError"), "error")
         setIsSaving(false)
         return
       } else {
@@ -346,7 +360,7 @@ export default function ReminderPage() {
           repeat_until: repeatUntil ?? undefined,
           tags,
         })
-        showNotification("Напоминание успешно обновлено", "success")
+        showNotification(t("reminder.updateSuccess"), "success")
       }
 
       // Обновляем время последнего сохранения
@@ -356,8 +370,8 @@ export default function ReminderPage() {
       setIsEdited(false)
     } catch (error) {
       console.error("Error updating reminder:", error)
-      setError("Произошла ошибка при обновлении напоминания")
-      showNotification("Произошла ошибка при обновлении напоминания", "error")
+      setError(t("reminder.updateErrorGeneral"))
+      showNotification(t("reminder.updateErrorGeneral"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -386,19 +400,19 @@ export default function ReminderPage() {
               className="ml-2 h-9 px-4 bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center"
             >
               <Bell className="h-4 w-4 mr-2" />
-              Напоминание
+              {t("reminder.reminder")}
             </Badge>
 
             {lastSaved && (
               <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
-                Сохранено {format(lastSaved, "HH:mm", { locale: ru })}
+                {t("reminder.saved", { time: format(lastSaved, "HH:mm", { locale: getDateLocale() }) })}
               </span>
             )}
 
             {isSaving && (
               <div className="flex items-center text-xs text-muted-foreground ml-2 hidden md:flex">
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                Сохранение...
+                {t("reminder.saving")}
               </div>
             )}
           </div>
@@ -418,12 +432,12 @@ export default function ReminderPage() {
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Сохранение...
+                    {t("reminder.saving")}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Сохранить
+                    {t("reminder.save")}
                   </>
                 )}
               </Button>
@@ -441,7 +455,7 @@ export default function ReminderPage() {
                   className="text-red-600 dark:text-red-400"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Удалить
+                  {t("reminder.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -461,7 +475,7 @@ export default function ReminderPage() {
               value={title}
               onChange={handleTitleChange}
               className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Без заголовка"
+              placeholder={t("reminder.noTitle")}
             />
           </div>
 
@@ -472,14 +486,14 @@ export default function ReminderPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Calendar className="h-3.5 w-3.5" />
-                  {date ? format(date, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
+                  {date ? format(date, "d MMMM yyyy", { locale: getDateLocale() }) : t("reminder.selectDate")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Дата</label>
+                      <label className="text-sm font-medium">{t("reminder.date")}</label>
                       <Input
                         type="date"
                         value={date ? format(date, "yyyy-MM-dd") : ""}
@@ -509,7 +523,7 @@ export default function ReminderPage() {
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Время</label>
+                      <label className="text-sm font-medium">{t("reminder.time")}</label>
                       <Input type="time" value={time} onChange={(e) => handleTimeChange(e.target.value)} />
                     </div>
                   </div>
@@ -534,7 +548,7 @@ export default function ReminderPage() {
                     onClick={() => handlePriorityChange("low")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Низкий
+                    {t("reminder.priorityLow")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -543,7 +557,7 @@ export default function ReminderPage() {
                     onClick={() => handlePriorityChange("medium")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Средний
+                    {t("reminder.priorityMedium")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -552,7 +566,7 @@ export default function ReminderPage() {
                     onClick={() => handlePriorityChange("high")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Высокий
+                    {t("reminder.priorityHigh")}
                   </Button>
                 </div>
               </PopoverContent>
@@ -575,7 +589,7 @@ export default function ReminderPage() {
                     onClick={() => handleRepeatTypeChange("none")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Не повторяется
+                    {t("reminder.repeatNone")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -584,7 +598,7 @@ export default function ReminderPage() {
                     onClick={() => handleRepeatTypeChange("daily")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Ежедневно
+                    {t("reminder.repeatDaily")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -593,7 +607,7 @@ export default function ReminderPage() {
                     onClick={() => handleRepeatTypeChange("weekly")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Еженедельно
+                    {t("reminder.repeatWeekly")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -602,7 +616,7 @@ export default function ReminderPage() {
                     onClick={() => handleRepeatTypeChange("monthly")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Ежемесячно
+                    {t("reminder.repeatMonthly")}
                   </Button>
                 </div>
               </PopoverContent>
@@ -614,7 +628,7 @@ export default function ReminderPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center mb-3">
                 <RefreshCw className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span className="text-sm font-medium">Дни недели</span>
+                <span className="text-sm font-medium">{t("reminder.weekDays")}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {weekDays.map((day) => {
@@ -641,7 +655,7 @@ export default function ReminderPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center mb-3">
                 <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span className="text-sm font-medium">Повторять до</span>
+                <span className="text-sm font-medium">{t("reminder.repeatUntil")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Input
@@ -659,7 +673,7 @@ export default function ReminderPage() {
                 />
                 {repeatUntil && (
                   <Button variant="ghost" size="sm" className="h-9 px-2" onClick={() => setRepeatUntil(null)}>
-                    Очистить
+                    {t("reminder.clear")}
                   </Button>
                 )}
               </div>
@@ -671,7 +685,7 @@ export default function ReminderPage() {
             <Textarea
               value={description}
               onChange={handleDescriptionChange}
-              placeholder="Добавьте описание..."
+              placeholder={t("reminder.addDescription")}
               className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
             />
           </div>
@@ -680,7 +694,7 @@ export default function ReminderPage() {
           <div className="pt-4 border-t">
             <div className="flex items-center mb-2">
               <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span className="text-sm font-medium">Теги</span>
+              <span className="text-sm font-medium">{t("reminder.tags")}</span>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -706,7 +720,7 @@ export default function ReminderPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={handleNewTagKeyDown}
                   className="h-7 px-2 w-32 text-sm"
-                  placeholder="Новый тег"
+                  placeholder={t("reminder.newTag")}
                 />
                 <Button
                   variant="ghost"
@@ -729,15 +743,13 @@ export default function ReminderPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие нельзя отменить. Напоминание будет навсегда удалено из вашей учетной записи.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("reminder.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("reminder.deleteConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>{t("reminder.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Удалить
+              {t("reminder.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
