@@ -42,6 +42,38 @@ export const kz = {
   "addEntry.newNote": "Жаңа жазба",
   "addEntry.newReminder": "Жаңа еске салғыш",
 
+  // Auth pages
+  "auth.login.title": "Қош келдіңіз",
+  "auth.login.subtitle": "Аккаунтыңызға кіріңіз",
+  "auth.login.username": "Логин",
+  "auth.login.password": "Құпия сөз",
+  "auth.login.button": "Кіру",
+  "auth.login.loading": "Кіру...",
+  "auth.login.noAccount": "Аккаунтыңыз жоқ па?",
+  "auth.login.register": "Тіркелу",
+  "auth.login.error.fillFields": "Барлық өрістерді толтырыңыз",
+  "auth.login.error.invalidCredentials": "Логин немесе құпия сөз қате",
+  "auth.login.error.general": "Кіру кезінде қате орын алды",
+  "auth.login.success.logout": "Сәтті шықтыңыз",
+  "auth.login.success.logoutDesc": "Сіз аккаунтыңыздан шықтыңыз",
+
+  "auth.register.title": "Қосылыңыз",
+  "auth.register.subtitle": "Аккаунт жасаңыз",
+  "auth.register.login": "Логин",
+  "auth.register.firstName": "Аты",
+  "auth.register.lastName": "Тегі",
+  "auth.register.email": "Email",
+  "auth.register.password": "Құпия сөз",
+  "auth.register.confirmPassword": "Құпия сөзді растаңыз",
+  "auth.register.button": "Тіркелу",
+  "auth.register.loading": "Тіркелу...",
+  "auth.register.hasAccount": "Аккаунтыңыз бар ма?",
+  "auth.register.loginLink": "Кіру",
+  "auth.register.required": "*",
+  "auth.register.error.fillRequired": "Барлық міндетті өрістерді толтырыңыз",
+  "auth.register.error.passwordMismatch": "Құпия сөздер сәйкес келмейді",
+  "auth.register.error.general": "Тіркелу кезінде қате орын алды",
+
   // Task page
   "task.loading": "Жүктелуде...",
   "task.notFound": "Тапсырма табылмады",
@@ -78,6 +110,19 @@ export const kz = {
   "task.updateSuccess": "Тапсырма сәтті жаңартылды",
   "task.updateError": "Тапсырманы жаңарту мүмкін болмады",
   "task.updateErrorGeneral": "Тапсырманы жаңарту кезінде қате орын алды",
+
+  // New Task page
+  "task.createNewTask": "Жаңа тапсырма",
+  "task.creating": "Жасалуда...",
+  "task.create": "Жасау",
+  "task.titlePlaceholder": "Тақырыпсыз",
+  "task.dateLabel": "Күні",
+  "task.timeLabel": "Уақыт",
+  "task.descriptionPlaceholder": "Сипаттама қосыңыз...",
+  "task.tagsLabel": "Тегтер",
+  "task.newTagPlaceholder": "Жаңа тег",
+  "task.createSuccess": "Тапсырма сәтті жасалды",
+  "task.createError": "Тапсырманы жасау мүмкін болмады",
 
   // Months
   "month.january": "қаңтар",
@@ -228,6 +273,20 @@ export const kz = {
   "note.updateError": "Жазбаны жаңарту кезінде қате орын алды",
   "note.loadError": "Жазбаны жүктеу мүмкін болмады",
 
+  // New Note page
+  "note.createNewNote": "Жаңа жазба",
+  "note.creating": "Жасалуда...",
+  "note.create": "Жасау",
+  "note.titlePlaceholder": "Тақырыпсыз",
+  "note.contentPlaceholder": "Жазба мазмұнын жаза бастаңыз...",
+  "note.tagsLabel": "Тегтер",
+  "note.newTagPlaceholder": "Жаңа тег",
+  "note.createSuccess": "Жазба сәтті жасалды",
+  "note.createError": "Жазбаны жасау мүмкін болмады",
+  "note.titleRequired": "Жазба тақырыбы бос болуы мүмкін емес",
+  "note.authRequired": "Авторизация қажет",
+  "note.createErrorGeneral": "Жазбаны жасау кезінде қате орын алды",
+
   // Reminder page
   "reminder.loading": "Жүктелуде...",
   "reminder.notFound": "Еске салғыш табылмады",
@@ -267,4 +326,22 @@ export const kz = {
   "reminder.updateSuccess": "Еске салғыш сәтті жаңартылды",
   "reminder.updateError": "Еске салғышты жаңарту мүмкін болмады",
   "reminder.updateErrorGeneral": "Еске салғышты жаңарту кезінде қате орын алды",
+
+  // New Reminder page
+  "reminder.createNewReminder": "Жаңа еске салғыш",
+  "reminder.creating": "Жасалуда...",
+  "reminder.create": "Жасау",
+  "reminder.titlePlaceholder": "Тақырыпсыз",
+  "reminder.titleRequired": "Еске салғыш тақырыбын енгізіңіз",
+  "reminder.authRequired": "Еске салғыш жасау үшін авторизация қажет",
+  "reminder.createSuccess": "Еске салғыш сәтті жасалды",
+  "reminder.createError": "Еске салғышты жасау мүмкін болмады",
+  "reminder.createErrorGeneral": "Еске салғышты жасау кезінде қате орын алды",
+
+  // Image Cropper
+  "imageCropper.title": "Суретті қию",
+  "imageCropper.zoom": "Масштаб",
+  "imageCropper.rotation": "Айналдыру",
+  "imageCropper.cancel": "Болдырмау",
+  "imageCropper.save": "Сақтау",
 }

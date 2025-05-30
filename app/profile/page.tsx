@@ -948,20 +948,12 @@ export default function ProfilePage() {
 
       {/* Image cropper component */}
       {imageToCrop && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <Card className="max-w-2xl w-full">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-semibold mb-2">{t("profile.cropAvatar")}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{t("profile.cropAvatarDesc")}</p>
-              <ImageCropper
-                image={imageToCrop}
-                onCropComplete={handleCropComplete}
-                onCancel={handleCropCancel}
-                open={cropperOpen}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <ImageCropper
+          image={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          open={cropperOpen}
+        />
       )}
 
       {/* Mobile padding for bottom navigation */}

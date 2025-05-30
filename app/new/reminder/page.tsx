@@ -2,10 +2,9 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { ru } from "date-fns/locale"
 import { ArrowLeft, Bell, Calendar, Clock, Flag, Tag, Plus, Save, Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,11 +15,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/contexts/auth-context"
 import type { PriorityLevel, RepeatType } from "@/types/entry"
 import { useNotification } from "@/components/ui/notification"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function NewReminderPage() {
   const router = useRouter()
   const { user } = useAuth()
   const { showNotification } = useNotification()
+  const { t, language } = useLanguage() // Добавляем language из контекста
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -39,7 +40,53 @@ export default function NewReminderPage() {
   // Refs для элементов редактирования
   const titleRef = useRef<HTMLInputElement>(null)
 
-  // Обработчики изменений полей
+  // Эффект для автоматического обновления даты "Повторять до" при изменении даты события
+  useEffect(() => {
+    if (repeatType !== "none") {
+      setRepeatUntil(new Date(date))
+    }
+  }, [date, repeatType])
+
+  // Функция для локализованного форматирования даты
+  const formatLocalizedDate = (date: Date) => {
+    const day = date.getDate()
+    const month = date.getMonth()
+    const year = date.getFullYear()
+
+    const monthNames = [
+      "month.january",
+      "month.february",
+      "month.march",
+      "month.april",
+      "month.may",
+      "month.june",
+      "month.july",
+      "month.august",
+      "month.september",
+      "month.october",
+      "month.november",
+      "month.december",
+    ]
+
+    const monthName = t(monthNames[month])
+    return `${day} ${monthName} ${year}`
+  }
+
+  // Функция для получения локализованного плейсхолдера формата даты
+  const getDateFormatPlaceholder = () => {
+    switch (language) {
+      case "ru":
+        return "дд.мм.гггг"
+      case "en":
+        return "mm/dd/yyyy"
+      case "kz":
+        return "кк.аа.жжжж"
+      default:
+        return "дд.мм.гггг"
+    }
+  }
+
+  // Обработчики изменений поле
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
   }
@@ -73,6 +120,9 @@ export default function NewReminderPage() {
     if (value === "none") {
       setRepeatDays([])
       setRepeatUntil(null)
+    } else {
+      // Автоматически устанавливаем дату события как дату окончания повторения
+      setRepeatUntil(new Date(date))
     }
   }
 
@@ -109,7 +159,7 @@ export default function NewReminderPage() {
   const handleSubmit = async () => {
     if (!title.trim()) {
       titleRef.current?.focus()
-      showNotification("Пожалуйста, введите заголовок напоминания", "error")
+      showNotification(t("reminder.titleRequired"), "error")
       return
     }
 
@@ -117,7 +167,7 @@ export default function NewReminderPage() {
     setError(null)
 
     if (!user) {
-      setError("Вы должн�� быть авторизованы для создания напоминания")
+      setError(t("reminder.authRequired"))
       setIsSaving(false)
       return
     }
@@ -149,16 +199,16 @@ export default function NewReminderPage() {
       const data = await response.json()
 
       if (data.success) {
-        showNotification("Напоминание успешно создано", "success")
+        showNotification(t("reminder.createSuccess"), "success")
         router.push("/reminders")
       } else {
-        setError(data.message || "Не удалось создать напоминание")
-        showNotification(data.message || "Не удалось создать напоминание", "error")
+        setError(data.message || t("reminder.createError"))
+        showNotification(data.message || t("reminder.createError"), "error")
       }
     } catch (error) {
       console.error("Error creating reminder:", error)
-      setError("Произошла ошибка при создании напоминания")
-      showNotification("Произошла ошибка при создании напоминания", "error")
+      setError(t("reminder.createErrorGeneral"))
+      showNotification(t("reminder.createErrorGeneral"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -171,26 +221,26 @@ export default function NewReminderPage() {
   }
 
   const priorityLabels = {
-    low: "Низкий",
-    medium: "Средний",
-    high: "Высокий",
+    low: t("reminder.priorityLow"),
+    medium: t("reminder.priorityMedium"),
+    high: t("reminder.priorityHigh"),
   }
 
   const repeatTypeLabels = {
-    none: "Не повторяется",
-    daily: "Ежедневно",
-    weekly: "Еженедельно",
-    monthly: "Ежемесячно",
+    none: t("reminder.repeatNone"),
+    daily: t("reminder.repeatDaily"),
+    weekly: t("reminder.repeatWeekly"),
+    monthly: t("reminder.repeatMonthly"),
   }
 
   const weekDays = [
-    { value: 1, label: "Пн" },
-    { value: 2, label: "Вт" },
-    { value: 3, label: "Ср" },
-    { value: 4, label: "Чт" },
-    { value: 5, label: "Пт" },
-    { value: 6, label: "Сб" },
-    { value: 0, label: "Вс" },
+    { value: 1, label: t("day.monday") },
+    { value: 2, label: t("day.tuesday") },
+    { value: 3, label: t("day.wednesday") },
+    { value: 4, label: t("day.thursday") },
+    { value: 5, label: t("day.friday") },
+    { value: 6, label: t("day.saturday") },
+    { value: 0, label: t("day.sunday") },
   ]
 
   return (
@@ -211,7 +261,7 @@ export default function NewReminderPage() {
               className="ml-2 h-9 px-4 bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center"
             >
               <Bell className="h-4 w-4 mr-2" />
-              Новое напоминание
+              {t("reminder.createNewReminder")}
             </Badge>
           </div>
 
@@ -229,12 +279,12 @@ export default function NewReminderPage() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Сохранение...
+                  {t("reminder.creating")}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Сохранить
+                  {t("reminder.create")}
                 </>
               )}
             </Button>
@@ -254,7 +304,7 @@ export default function NewReminderPage() {
               value={title}
               onChange={handleTitleChange}
               className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Без заголовка"
+              placeholder={t("reminder.titlePlaceholder")}
             />
           </div>
 
@@ -265,14 +315,14 @@ export default function NewReminderPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(date, "d MMMM yyyy", { locale: ru })}
+                  {formatLocalizedDate(date)}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Дата</label>
+                      <label className="text-sm font-medium">{t("reminder.date")}</label>
                       <Input
                         type="date"
                         value={format(date, "yyyy-MM-dd")}
@@ -282,6 +332,7 @@ export default function NewReminderPage() {
                           newDate.setFullYear(year, month - 1, day)
                           handleDateChange(newDate)
                         }}
+                        placeholder={getDateFormatPlaceholder()}
                       />
                     </div>
                   </div>
@@ -301,7 +352,7 @@ export default function NewReminderPage() {
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Время</label>
+                      <label className="text-sm font-medium">{t("reminder.time")}</label>
                       <Input type="time" value={time} onChange={(e) => handleTimeChange(e.target.value)} />
                     </div>
                   </div>
@@ -326,7 +377,7 @@ export default function NewReminderPage() {
                     onClick={() => handlePriorityChange("low")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Низкий
+                    {t("reminder.priorityLow")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -335,7 +386,7 @@ export default function NewReminderPage() {
                     onClick={() => handlePriorityChange("medium")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Средний
+                    {t("reminder.priorityMedium")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -344,7 +395,7 @@ export default function NewReminderPage() {
                     onClick={() => handlePriorityChange("high")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Высокий
+                    {t("reminder.priorityHigh")}
                   </Button>
                 </div>
               </PopoverContent>
@@ -367,7 +418,7 @@ export default function NewReminderPage() {
                     onClick={() => handleRepeatTypeChange("none")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Не повторяется
+                    {t("reminder.repeatNone")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -376,7 +427,7 @@ export default function NewReminderPage() {
                     onClick={() => handleRepeatTypeChange("daily")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Ежедневно
+                    {t("reminder.repeatDaily")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -385,7 +436,7 @@ export default function NewReminderPage() {
                     onClick={() => handleRepeatTypeChange("weekly")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Еженедельно
+                    {t("reminder.repeatWeekly")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -394,7 +445,7 @@ export default function NewReminderPage() {
                     onClick={() => handleRepeatTypeChange("monthly")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
-                    Ежемесячно
+                    {t("reminder.repeatMonthly")}
                   </Button>
                 </div>
               </PopoverContent>
@@ -406,7 +457,7 @@ export default function NewReminderPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center mb-3">
                 <RefreshCw className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span className="text-sm font-medium">Дни недели</span>
+                <span className="text-sm font-medium">{t("reminder.weekDays")}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {weekDays.map((day) => {
@@ -433,25 +484,44 @@ export default function NewReminderPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center mb-3">
                 <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span className="text-sm font-medium">Повторять до</span>
+                <span className="text-sm font-medium">{t("reminder.repeatUntil")}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={repeatUntil ? format(repeatUntil, "yyyy-MM-dd") : ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const [year, month, day] = e.target.value.split("-").map(Number)
-                      setRepeatUntil(new Date(year, month - 1, day))
-                    } else {
-                      setRepeatUntil(null)
-                    }
-                  }}
-                  className="w-auto"
-                />
+              <div className="flex flex-wrap gap-4">
+                {/* Дата окончания повторения */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 h-8">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {repeatUntil ? formatLocalizedDate(repeatUntil) : t("reminder.selectDate")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-4">
+                      <div className="grid gap-2">
+                        <div className="grid gap-1">
+                          <label className="text-sm font-medium">{t("reminder.date")}</label>
+                          <Input
+                            type="date"
+                            value={repeatUntil ? format(repeatUntil, "yyyy-MM-dd") : ""}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                const [year, month, day] = e.target.value.split("-").map(Number)
+                                setRepeatUntil(new Date(year, month - 1, day))
+                              } else {
+                                setRepeatUntil(null)
+                              }
+                            }}
+                            placeholder={getDateFormatPlaceholder()}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
                 {repeatUntil && (
-                  <Button variant="ghost" size="sm" className="h-9 px-2" onClick={() => setRepeatUntil(null)}>
-                    Очистить
+                  <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => setRepeatUntil(null)}>
+                    {t("reminder.clear")}
                   </Button>
                 )}
               </div>
@@ -464,7 +534,7 @@ export default function NewReminderPage() {
               value={description}
               onChange={handleDescriptionChange}
               className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
-              placeholder="Добавьте описание..."
+              placeholder={t("reminder.addDescription")}
             />
           </div>
 
@@ -472,7 +542,7 @@ export default function NewReminderPage() {
           <div className="pt-4 border-t">
             <div className="flex items-center mb-2">
               <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span className="text-sm font-medium">Теги</span>
+              <span className="text-sm font-medium">{t("reminder.tags")}</span>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -498,7 +568,7 @@ export default function NewReminderPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={handleNewTagKeyDown}
                   className="h-7 px-2 w-32 text-sm"
-                  placeholder="Новый тег"
+                  placeholder={t("reminder.newTag")}
                 />
                 <Button
                   variant="ghost"

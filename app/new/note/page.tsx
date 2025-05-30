@@ -8,16 +8,41 @@ import { ArrowLeft, Calendar, Save, Tag, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { format } from "date-fns"
-import { ru } from "date-fns/locale"
 import { useNotification } from "@/components/ui/notification"
 import { RichTextEditor } from "@/components/features/editor/rich-text-editor"
 import { useAuth } from "@/contexts/auth-context"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function NewNotePage() {
   const router = useRouter()
   const { user } = useAuth()
   const { showNotification } = useNotification()
+  const { t } = useLanguage()
+
+  // Функция для форматирования даты с использованием локализации
+  const formatLocalizedDate = (date: Date) => {
+    const day = date.getDate()
+    const month = date.getMonth()
+    const year = date.getFullYear()
+
+    const monthNames = [
+      "month.january",
+      "month.february",
+      "month.march",
+      "month.april",
+      "month.may",
+      "month.june",
+      "month.july",
+      "month.august",
+      "month.september",
+      "month.october",
+      "month.november",
+      "month.december",
+    ]
+
+    const monthName = t(monthNames[month])
+    return `${day} ${monthName} ${year}`
+  }
 
   // Refs для элементов редактирования
   const titleRef = useRef<HTMLInputElement>(null)
@@ -75,12 +100,12 @@ export default function NewNotePage() {
   // Функция для сохранения заметки
   const handleSave = async () => {
     if (!title.trim()) {
-      showNotification("Заголовок заметки не может быть пустым", "error")
+      showNotification(t("note.titleRequired"), "error")
       return
     }
 
     if (!user) {
-      showNotification("Необходимо авторизоваться", "error")
+      showNotification(t("note.authRequired"), "error")
       router.push("/login")
       return
     }
@@ -105,11 +130,11 @@ export default function NewNotePage() {
         throw new Error(data.message || "Ошибка при создании заметки")
       }
 
-      showNotification("Заметка успешно создана", "success")
+      showNotification(t("note.createSuccess"), "success")
       router.push("/notes")
     } catch (error) {
       console.error("Error creating note:", error)
-      showNotification(error instanceof Error ? error.message : "Произошла ошибка при создании заметки", "error")
+      showNotification(error instanceof Error ? error.message : t("note.createErrorGeneral"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -141,11 +166,11 @@ export default function NewNotePage() {
               className="ml-2 h-9 px-4 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center"
             >
               <Calendar className="h-4 w-4 mr-2" />
-              Заметка
+              {t("note.note")}
             </Badge>
 
             <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
-              {format(new Date(), "d MMMM yyyy", { locale: ru })}
+              {formatLocalizedDate(new Date())}
             </span>
           </div>
 
@@ -163,12 +188,12 @@ export default function NewNotePage() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Сохранение...
+                  {t("note.creating")}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Сохранить
+                  {t("note.create")}
                 </>
               )}
             </Button>
@@ -184,7 +209,7 @@ export default function NewNotePage() {
               value={title}
               onChange={handleTitleChange}
               className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Без заголовка"
+              placeholder={t("note.titlePlaceholder")}
             />
           </div>
 
@@ -213,7 +238,7 @@ export default function NewNotePage() {
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyDown={handleNewTagKeyDown}
                 className="h-7 px-2 w-32 text-sm border-none focus-visible:ring-0"
-                placeholder="Новый тег"
+                placeholder={t("note.newTagPlaceholder")}
               />
               <Button
                 variant="ghost"
@@ -232,7 +257,7 @@ export default function NewNotePage() {
             <RichTextEditor
               value={content}
               onChange={handleContentChange}
-              placeholder="Начните писать содержимое заметки..."
+              placeholder={t("note.contentPlaceholder")}
               className="border-none shadow-none"
               minHeight="300px"
             />

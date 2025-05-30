@@ -43,6 +43,38 @@ export const en = {
   "addEntry.newNote": "New Note",
   "addEntry.newReminder": "New Reminder",
 
+  // Auth pages
+  "auth.login.title": "Welcome Back",
+  "auth.login.subtitle": "Sign in to your account",
+  "auth.login.username": "Username",
+  "auth.login.password": "Password",
+  "auth.login.button": "Sign In",
+  "auth.login.loading": "Signing in...",
+  "auth.login.noAccount": "Don't have an account?",
+  "auth.login.register": "Sign up",
+  "auth.login.error.fillFields": "Please fill in all fields",
+  "auth.login.error.invalidCredentials": "Invalid username or password",
+  "auth.login.error.general": "An error occurred during login",
+  "auth.login.success.logout": "Successfully logged out",
+  "auth.login.success.logoutDesc": "You have been logged out of your account",
+
+  "auth.register.title": "Join Us",
+  "auth.register.subtitle": "Create your account",
+  "auth.register.login": "Username",
+  "auth.register.firstName": "First Name",
+  "auth.register.lastName": "Last Name",
+  "auth.register.email": "Email",
+  "auth.register.password": "Password",
+  "auth.register.confirmPassword": "Confirm Password",
+  "auth.register.button": "Sign Up",
+  "auth.register.loading": "Creating account...",
+  "auth.register.hasAccount": "Already have an account?",
+  "auth.register.loginLink": "Sign in",
+  "auth.register.required": "*",
+  "auth.register.error.fillRequired": "Please fill in all required fields",
+  "auth.register.error.passwordMismatch": "Passwords do not match",
+  "auth.register.error.general": "An error occurred during registration",
+
   // Task page
   "task.loading": "Loading...",
   "task.notFound": "Task not found",
@@ -79,6 +111,19 @@ export const en = {
   "task.updateSuccess": "Task successfully updated",
   "task.updateError": "Failed to update task",
   "task.updateErrorGeneral": "An error occurred while updating the task",
+
+  // New Task page
+  "task.createNewTask": "New Task",
+  "task.creating": "Creating...",
+  "task.create": "Create",
+  "task.titlePlaceholder": "Untitled",
+  "task.dateLabel": "Date",
+  "task.timeLabel": "Time",
+  "task.descriptionPlaceholder": "Add description...",
+  "task.tagsLabel": "Tags",
+  "task.newTagPlaceholder": "New tag",
+  "task.createSuccess": "Task successfully created",
+  "task.createError": "Failed to create task",
 
   // Months
   "month.january": "January",
@@ -229,6 +274,20 @@ export const en = {
   "note.updateError": "An error occurred while updating the note",
   "note.loadError": "Failed to load note",
 
+  // New Note page
+  "note.createNewNote": "New Note",
+  "note.creating": "Creating...",
+  "note.create": "Create",
+  "note.titlePlaceholder": "Untitled",
+  "note.contentPlaceholder": "Start writing note content...",
+  "note.tagsLabel": "Tags",
+  "note.newTagPlaceholder": "New tag",
+  "note.createSuccess": "Note successfully created",
+  "note.createError": "Failed to create note",
+  "note.titleRequired": "Note title cannot be empty",
+  "note.authRequired": "Authorization required",
+  "note.createErrorGeneral": "An error occurred while creating the note",
+
   // Reminder page
   "reminder.loading": "Loading...",
   "reminder.notFound": "Reminder not found",
@@ -268,4 +327,11 @@ export const en = {
   "reminder.updateSuccess": "Reminder successfully updated",
   "reminder.updateError": "Failed to update reminder",
   "reminder.updateErrorGeneral": "An error occurred while updating the reminder",
+
+  // Image Cropper
+  "imageCropper.title": "Crop Image",
+  "imageCropper.zoom": "Zoom",
+  "imageCropper.rotation": "Rotation",
+  "imageCropper.cancel": "Cancel",
+  "imageCropper.save": "Save",
 }

@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { ru } from "date-fns/locale"
+import { ru, enUS, kk } from "date-fns/locale"
 import { ArrowLeft, ListTodo, Calendar, Clock, Flag, Tag, Plus, Save, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAuth } from "@/contexts/auth-context"
+import { useLanguage } from "@/contexts/language-context"
 import type { PriorityLevel } from "@/types/entry"
 
 // Импортируем хук для уведомлений
@@ -22,6 +22,7 @@ import { useNotification } from "@/components/ui/notification"
 export default function NewTaskPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<PriorityLevel>("medium")
@@ -87,7 +88,7 @@ export default function NewTaskPage() {
   const handleSubmit = async () => {
     if (!title.trim()) {
       titleRef.current?.focus()
-      showNotification("Пожалуйста, введите заголовок задачи", "error")
+      showNotification(t("task.createError"), "error")
       return
     }
 
@@ -95,7 +96,7 @@ export default function NewTaskPage() {
     setError(null)
 
     if (!user) {
-      setError("Вы должны быть авторизованы для создания задачи")
+      setError(t("task.createError"))
       setIsSaving(false)
       return
     }
@@ -123,16 +124,16 @@ export default function NewTaskPage() {
       const data = await response.json()
 
       if (data.success) {
-        showNotification("Задача успешно создана", "success")
+        showNotification(t("task.createSuccess"), "success")
         router.push("/dashboard")
       } else {
-        setError(data.message || "Не удалось создать задачу")
-        showNotification(data.message || "Не удалось создать задачу", "error")
+        setError(data.message || t("task.createError"))
+        showNotification(data.message || t("task.createError"), "error")
       }
     } catch (error) {
       console.error("Error creating task:", error)
-      setError("Произошла ошибка при создании задачи")
-      showNotification("Произошла ошибка при создании задачи", "error")
+      setError(t("task.createError"))
+      showNotification(t("task.createError"), "error")
     } finally {
       setIsSaving(false)
     }
@@ -145,9 +146,22 @@ export default function NewTaskPage() {
   }
 
   const priorityLabels = {
-    low: "Низкий",
-    medium: "Средний",
-    high: "Высокий",
+    low: t("task.priorityLow"),
+    medium: t("task.priorityMedium"),
+    high: t("task.priorityHigh"),
+  }
+
+  const getDateLocale = () => {
+    switch (language) {
+      case "ru":
+        return ru
+      case "kz":
+        return kk
+      case "en":
+        return enUS
+      default:
+        return ru
+    }
   }
 
   return (
@@ -168,7 +182,7 @@ export default function NewTaskPage() {
               className="ml-2 h-9 px-4 bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center"
             >
               <ListTodo className="h-4 w-4 mr-2" />
-              Новая задача
+              {t("task.createNewTask")}
             </Badge>
           </div>
 
@@ -186,12 +200,12 @@ export default function NewTaskPage() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Сохранение...
+                  {t("task.creating")}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Сохранить
+                  {t("task.create")}
                 </>
               )}
             </Button>
@@ -211,7 +225,7 @@ export default function NewTaskPage() {
               value={title}
               onChange={handleTitleChange}
               className="text-3xl md:text-4xl font-bold tracking-tight border-none shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Без заголовка"
+              placeholder={t("task.titlePlaceholder")}
             />
           </div>
 
@@ -222,14 +236,14 @@ export default function NewTaskPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(date, "d MMMM yyyy", { locale: ru })}
+                  {format(date, "d MMMM yyyy", { locale: getDateLocale() })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Дата</label>
+                      <label className="text-sm font-medium">{t("task.dateLabel")}</label>
                       <Input
                         type="date"
                         value={format(date, "yyyy-MM-dd")}
@@ -251,14 +265,14 @@ export default function NewTaskPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 h-8">
                   <Clock className="h-3.5 w-3.5" />
-                  {format(date, "HH:mm", { locale: ru })}
+                  {format(date, "HH:mm", { locale: getDateLocale() })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-4">
                   <div className="grid gap-2">
                     <div className="grid gap-1">
-                      <label className="text-sm font-medium">Время</label>
+                      <label className="text-sm font-medium">{t("task.timeLabel")}</label>
                       <Input
                         type="time"
                         value={format(date, "HH:mm")}
@@ -290,7 +304,7 @@ export default function NewTaskPage() {
                     onClick={() => handlePriorityChange("low")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Низкий
+                    {t("task.priorityLow")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -299,7 +313,7 @@ export default function NewTaskPage() {
                     onClick={() => handlePriorityChange("medium")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Средний
+                    {t("task.priorityMedium")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -308,7 +322,7 @@ export default function NewTaskPage() {
                     onClick={() => handlePriorityChange("high")}
                   >
                     <Flag className="h-3.5 w-3.5" />
-                    Высокий
+                    {t("task.priorityHigh")}
                   </Button>
                 </div>
               </PopoverContent>
@@ -322,7 +336,7 @@ export default function NewTaskPage() {
               value={description}
               onChange={handleDescriptionChange}
               className="min-h-[200px] resize-none border-none shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
-              placeholder="Добавьте описание..."
+              placeholder={t("task.descriptionPlaceholder")}
             />
           </div>
 
@@ -330,7 +344,7 @@ export default function NewTaskPage() {
           <div className="pt-4 border-t">
             <div className="flex items-center mb-2">
               <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span className="text-sm font-medium">Теги</span>
+              <span className="text-sm font-medium">{t("task.tagsLabel")}</span>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -356,7 +370,7 @@ export default function NewTaskPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={handleNewTagKeyDown}
                   className="h-7 px-2 w-32 text-sm"
-                  placeholder="Новый тег"
+                  placeholder={t("task.newTagPlaceholder")}
                 />
                 <Button
                   variant="ghost"

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -11,7 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Eye, EyeOff } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Loader2, Eye, EyeOff, Sparkles, UserPlus, Globe } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
+import { cn } from "@/lib/utils"
 
 export default function RegisterPage() {
   const [login, setLogin] = useState("")
@@ -21,12 +23,19 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
+  const [focusedField, setFocusedField] = useState<string | null>(null)
   const { register, isLoading, user } = useAuth()
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const { language, setLanguage, t } = useLanguage()
 
-  // Redirect if already logged in
+  const languageOptions = [
+    { value: "ru", label: "Русский" },
+    { value: "kz", label: "Қазақша" },
+    { value: "en", label: "English" },
+  ]
+
   useEffect(() => {
     if (user) {
       router.push("/dashboard")
@@ -38,12 +47,12 @@ export default function RegisterPage() {
     setError("")
 
     if (!login || !firstName || !email || !password || !confirmPassword) {
-      setError("Пожалуйста, заполните все обязательные поля")
+      setError(t("auth.register.error.fillRequired"))
       return
     }
 
     if (password !== confirmPassword) {
-      setError("Пароли не совпадают")
+      setError(t("auth.register.error.passwordMismatch"))
       return
     }
 
@@ -59,174 +68,316 @@ export default function RegisterPage() {
       if (result.success) {
         router.push("/dashboard")
       } else {
-        setError(result.message || "Ошибка при регистрации")
+        setError(result.message || t("auth.register.error.general"))
       }
     } catch (err) {
-      setError("Произошла ошибка при регистрации")
+      setError(t("auth.register.error.general"))
     }
   }
 
-  // Don't render the register form if already logged in
   if (user) {
     return null
   }
 
+  const isLoginLabelFloating = focusedField === "login" || login
+  const isFirstNameLabelFloating = focusedField === "firstName" || firstName
+  const isLastNameLabelFloating = focusedField === "lastName" || lastName
+  const isEmailLabelFloating = focusedField === "email" || email
+  const isPasswordLabelFloating = focusedField === "password" || password
+  const isConfirmPasswordLabelFloating = focusedField === "confirmPassword" || confirmPassword
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-secondary/20 px-3 py-4 sm:px-6 sm:py-10">
-      <div className="w-full max-w-md mx-auto transform-none transition-none">
-        <Card className="border-none shadow-lg overflow-hidden transform-none transition-none">
-          <CardHeader className="space-y-3 text-center px-4 py-4 sm:px-6 sm:py-5">
-            <div className="flex justify-center mb-2 sm:mb-3">
-              <Image
-                src="/logo.png"
-                alt="Chronos Logo"
-                width={56}
-                height={56}
-                className="drop-shadow-[0_0_10px_rgba(139,92,246,0.7)] sm:w-[64px] sm:h-[64px] w-[56px] h-[56px]"
-              />
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900">
+      {/* Language Toggle - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm border border-white/20 transition-all hover:bg-white/20 hover:scale-110 active:scale-90">
+              <Globe className="h-5 w-5 text-white" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-white/10 backdrop-blur-xl border border-white/20">
+            {languageOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                className={cn(
+                  "cursor-pointer text-white hover:bg-white/10",
+                  language === option.value && "bg-white/20 font-medium",
+                )}
+                onClick={() => setLanguage(option.value as "ru" | "kz" | "en")}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 md:w-80 md:h-80 bg-emerald-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 md:w-64 md:h-64 bg-cyan-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      {/* Floating Particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 md:w-2 md:h-2 bg-white/10 rounded-full animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${2 + Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="w-full max-w-md px-4 py-0 mx-auto">
+        <Card className="backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl overflow-hidden">
+          <CardHeader className="text-center space-y-3 px-4 py-4 sm:px-6 sm:py-5">
+            {/* Logo */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full blur opacity-75 animate-pulse"></div>
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center shadow-xl">
+                  <Image src="/logo.png" alt="Chronos Logo" width={48} height={48} className="drop-shadow-lg" />
+                </div>
+              </div>
             </div>
-            <CardTitle className="text-xl sm:text-2xl font-bold">Chronos</CardTitle>
-            <CardDescription className="text-sm sm:text-base">Создайте новый аккаунт</CardDescription>
+
+            <div className="space-y-1">
+              <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-emerald-200 bg-clip-text text-transparent">
+                {t("auth.register.title")}
+              </CardTitle>
+              <CardDescription className="text-white/70 text-sm sm:text-base">
+                {t("auth.register.subtitle")}
+              </CardDescription>
+            </div>
           </CardHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col h-full">
-            <CardContent className="space-y-4 px-4 sm:px-6 py-3 sm:py-4 flex-grow">
-              <div className="space-y-2">
-                <Label htmlFor="login" className="text-sm sm:text-base">
-                  Логин <span className="text-destructive">*</span>
-                </Label>
+
+          <CardContent className="px-4 sm:px-6 pb-2 sm:pb-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Login Field */}
+              <div className="relative">
                 <Input
                   id="login"
-                  placeholder="Введите логин"
                   value={login}
                   onChange={(e) => setLogin(e.target.value)}
+                  onFocus={() => setFocusedField("login")}
+                  onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 sm:h-12 text-sm sm:text-base py-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  placeholder=""
+                  autoComplete="off"
                 />
+                <Label
+                  htmlFor="login"
+                  className={`absolute left-3 transition-all duration-200 pointer-events-none ${
+                    isLoginLabelFloating
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      : "top-2 text-sm text-white/70"
+                  }`}
+                >
+                  {t("auth.register.login")} {t("auth.register.required")}
+                </Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm sm:text-base">
-                  Имя <span className="text-destructive">*</span>
-                </Label>
+              {/* First Name Field */}
+              <div className="relative">
                 <Input
                   id="firstName"
-                  placeholder="Введите имя"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  onFocus={() => setFocusedField("firstName")}
+                  onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 sm:h-12 text-sm sm:text-base py-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  placeholder=""
+                  autoComplete="off"
                 />
+                <Label
+                  htmlFor="firstName"
+                  className={`absolute left-3 transition-all duration-200 pointer-events-none ${
+                    isFirstNameLabelFloating
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      : "top-2 text-sm text-white/70"
+                  }`}
+                >
+                  {t("auth.register.firstName")} {t("auth.register.required")}
+                </Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm sm:text-base">
-                  Фамилия
-                </Label>
+              {/* Last Name Field */}
+              <div className="relative">
                 <Input
                   id="lastName"
-                  placeholder="Введите фамилию"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
+                  onFocus={() => setFocusedField("lastName")}
+                  onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
-                  className="h-10 sm:h-12 text-sm sm:text-base py-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  placeholder=""
+                  autoComplete="off"
                 />
+                <Label
+                  htmlFor="lastName"
+                  className={`absolute left-3 transition-all duration-200 pointer-events-none ${
+                    isLastNameLabelFloating
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      : "top-2 text-sm text-white/70"
+                  }`}
+                >
+                  {t("auth.register.lastName")}
+                </Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm sm:text-base">
-                  Email <span className="text-destructive">*</span>
-                </Label>
+              {/* Email Field */}
+              <div className="relative">
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Введите email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 sm:h-12 text-sm sm:text-base py-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  placeholder=""
+                  autoComplete="off"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm sm:text-base">
-                  Пароль <span className="text-destructive">*</span>
+                <Label
+                  htmlFor="email"
+                  className={`absolute left-3 transition-all duration-200 pointer-events-none ${
+                    isEmailLabelFloating
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      : "top-2 text-sm text-white/70"
+                  }`}
+                >
+                  {t("auth.register.email")} {t("auth.register.required")}
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Введите пароль"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                    className="pr-10 h-10 sm:h-12 text-sm sm:text-base py-2"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm sm:text-base">
-                  Подтвердите пароль <span className="text-destructive">*</span>
+              {/* Password Field */}
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
+                  disabled={isLoading}
+                  required
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2 pr-10"
+                  placeholder=""
+                  autoComplete="off"
+                />
+                <Label
+                  htmlFor="password"
+                  className={`absolute left-3 transition-all duration-200 pointer-events-none ${
+                    isPasswordLabelFloating
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      : "top-2 text-sm text-white/70"
+                  }`}
+                >
+                  {t("auth.register.password")} {t("auth.register.required")}
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Подтвердите пароль"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                    className="pr-10 h-10 sm:h-12 text-sm sm:text-base py-2"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
 
-              {error && <p className="text-sm text-destructive mt-2">{error}</p>}
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-3 px-4 sm:px-6 py-4 sm:py-5">
+              {/* Confirm Password Field */}
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onFocus={() => setFocusedField("confirmPassword")}
+                  onBlur={() => setFocusedField(null)}
+                  disabled={isLoading}
+                  required
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2 pr-10"
+                  placeholder=""
+                  autoComplete="off"
+                />
+                <Label
+                  htmlFor="confirmPassword"
+                  className={`absolute left-3 transition-all duration-200 pointer-events-none ${
+                    isConfirmPasswordLabelFloating
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      : "top-2 text-sm text-white/70"
+                  }`}
+                >
+                  {t("auth.register.confirmPassword")} {t("auth.register.required")}
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-2 animate-in slide-in-from-top-2">
+                  <p className="text-red-200 text-xs text-center">{error}</p>
+                </div>
+              )}
+
+              {/* Register Button */}
               <Button
                 type="submit"
-                className="w-full h-11 sm:h-12 text-sm sm:text-base py-2 shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:shadow-[0_0_20px_rgba(139,92,246,0.7)] transition-shadow"
+                className="w-full h-10 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-sm rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-4"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                    Регистрация...
-                  </>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t("auth.register.loading")}</span>
+                  </div>
                 ) : (
-                  "Зарегистрироваться"
+                  <div className="flex items-center justify-center space-x-2">
+                    <UserPlus className="h-4 w-4" />
+                    <span>{t("auth.register.button")}</span>
+                  </div>
                 )}
               </Button>
-              <p className="text-center text-sm sm:text-base text-muted-foreground mt-2">
-                Уже есть аккаунт?{" "}
-                <Link href="/login" className="text-primary hover:underline">
-                  Войти
+            </form>
+          </CardContent>
+
+          <CardFooter className="px-4 sm:px-6 py-3 sm:py-4">
+            <div className="w-full text-center space-y-2">
+              <div className="flex items-center space-x-2 justify-center text-white/60">
+                <div className="h-px bg-white/20 flex-1"></div>
+                <Sparkles className="h-3 w-3" />
+                <div className="h-px bg-white/20 flex-1"></div>
+              </div>
+              <p className="text-white/70 text-xs sm:text-sm">
+                {t("auth.register.hasAccount")}{" "}
+                <Link
+                  href="/login"
+                  className="text-emerald-300 hover:text-emerald-200 font-medium transition-colors hover:underline"
+                >
+                  {t("auth.register.loginLink")}
                 </Link>
               </p>
-            </CardFooter>
-          </form>
+            </div>
+          </CardFooter>
         </Card>
       </div>
     </div>

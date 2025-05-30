@@ -44,6 +44,38 @@ export const ru = {
   "addEntry.newNote": "Новая заметка",
   "addEntry.newReminder": "Новое напоминание",
 
+  // Auth pages
+  "auth.login.title": "Добро пожаловать",
+  "auth.login.subtitle": "Войдите в свой аккаунт",
+  "auth.login.username": "Логин",
+  "auth.login.password": "Пароль",
+  "auth.login.button": "Войти",
+  "auth.login.loading": "Вход...",
+  "auth.login.noAccount": "Еще нет аккаунта?",
+  "auth.login.register": "Зарегистрироваться",
+  "auth.login.error.fillFields": "Пожалуйста, заполните все поля",
+  "auth.login.error.invalidCredentials": "Неверный логин или пароль",
+  "auth.login.error.general": "Произошла ошибка при входе",
+  "auth.login.success.logout": "Выход выполнен успешно",
+  "auth.login.success.logoutDesc": "Вы вышли из своей учетной записи",
+
+  "auth.register.title": "Присоединяйтесь",
+  "auth.register.subtitle": "Создайте аккаунт",
+  "auth.register.login": "Логин",
+  "auth.register.firstName": "Имя",
+  "auth.register.lastName": "Фамилия",
+  "auth.register.email": "Email",
+  "auth.register.password": "Пароль",
+  "auth.register.confirmPassword": "Подтвердите пароль",
+  "auth.register.button": "Зарегистрироваться",
+  "auth.register.loading": "Регистрация...",
+  "auth.register.hasAccount": "Уже есть аккаунт?",
+  "auth.register.loginLink": "Войти",
+  "auth.register.required": "*",
+  "auth.register.error.fillRequired": "Пожалуйста, заполните все обязательные поля",
+  "auth.register.error.passwordMismatch": "Пароли не совпадают",
+  "auth.register.error.general": "Произошла ошибка при регистрации",
+
   // Task page
   "task.loading": "Загрузка...",
   "task.notFound": "Задача не найдена",
@@ -80,6 +112,19 @@ export const ru = {
   "task.updateSuccess": "Задача успешно обновлена",
   "task.updateError": "Не удалось обновить задачу",
   "task.updateErrorGeneral": "Произошла ошибка при обновлении задачи",
+
+  // New Task page
+  "task.createNewTask": "Новая задача",
+  "task.creating": "Создание...",
+  "task.create": "Создать",
+  "task.titlePlaceholder": "Без заголовка",
+  "task.dateLabel": "Дата",
+  "task.timeLabel": "Время",
+  "task.descriptionPlaceholder": "Добавьте описание...",
+  "task.tagsLabel": "Теги",
+  "task.newTagPlaceholder": "Новый тег",
+  "task.createSuccess": "Задача успешно создана",
+  "task.createError": "Не удалось создать задачу",
 
   // Months
   "month.january": "январь",
@@ -230,6 +275,20 @@ export const ru = {
   "note.updateError": "Произошла ошибка при обновлении заметки",
   "note.loadError": "Не удалось загрузить заметку",
 
+  // New Note page
+  "note.createNewNote": "Новая заметка",
+  "note.creating": "Создание...",
+  "note.create": "Создать",
+  "note.titlePlaceholder": "Без заголовка",
+  "note.contentPlaceholder": "Начните писать содержимое заметки...",
+  "note.tagsLabel": "Теги",
+  "note.newTagPlaceholder": "Новый тег",
+  "note.createSuccess": "Заметка успешно создана",
+  "note.createError": "Не удалось создать заметку",
+  "note.titleRequired": "Заголовок заметки не может быть пустым",
+  "note.authRequired": "Необходимо авторизоваться",
+  "note.createErrorGeneral": "Произошла ошибка при создании заметки",
+
   // Reminder page
   "reminder.loading": "Загрузка...",
   "reminder.notFound": "Напоминание не найдено",
@@ -269,4 +328,22 @@ export const ru = {
   "reminder.updateSuccess": "Напоминание успешно обновлено",
   "reminder.updateError": "Не удалось обновить напоминание",
   "reminder.updateErrorGeneral": "Произошла ошибка при обновлении напоминания",
+
+  // New Reminder page
+  "reminder.createNewReminder": "Новое напоминание",
+  "reminder.creating": "Создание...",
+  "reminder.create": "Создать",
+  "reminder.titlePlaceholder": "Без заголовка",
+  "reminder.titleRequired": "Пожалуйста, введите заголовок напоминания",
+  "reminder.authRequired": "Вы должны быть авторизованы для создания напоминания",
+  "reminder.createSuccess": "Напоминание успешно создано",
+  "reminder.createError": "Не удалось создать напоминание",
+  "reminder.createErrorGeneral": "Произошла ошибка при создании напоминания",
+
+  // Image Cropper
+  "imageCropper.title": "Обрезать изображение",
+  "imageCropper.zoom": "Масштаб",
+  "imageCropper.rotation": "Поворот",
+  "imageCropper.cancel": "Отмена",
+  "imageCropper.save": "Сохранить",
 }

@@ -89,6 +89,20 @@ export default function ReminderPage() {
     }
   }
 
+  // Функция для получения плейсхолдера формата даты
+  const getDateFormatPlaceholder = () => {
+    switch (language) {
+      case "ru":
+        return "дд.мм.гггг"
+      case "en":
+        return "mm/dd/yyyy"
+      case "kz":
+        return "кк.аа.жжжж"
+      default:
+        return "дд.мм.гггг"
+    }
+  }
+
   useEffect(() => {
     // Get the source from URL query parameters
     const urlParams = new URLSearchParams(window.location.search)
@@ -123,6 +137,14 @@ export default function ReminderPage() {
 
     fetchReminder()
   }, [params.id, router])
+
+  // Автоматическая синхронизация даты "Повторять до" с датой события
+  useEffect(() => {
+    if (date && repeatType !== "none") {
+      setRepeatUntil(new Date(date))
+      setIsEdited(true)
+    }
+  }, [date, repeatType])
 
   // Функция для инициализации полей формы
   const initializeFormFields = (reminder: Entry) => {
@@ -203,6 +225,9 @@ export default function ReminderPage() {
     if (value === "none") {
       setRepeatDays([])
       setRepeatUntil(null)
+    } else if (date) {
+      // Автоматически устанавливаем дату события как дату окончания повторения
+      setRepeatUntil(new Date(date))
     }
     setIsEdited(true)
   }
@@ -657,22 +682,53 @@ export default function ReminderPage() {
                 <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                 <span className="text-sm font-medium">{t("reminder.repeatUntil")}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={repeatUntil ? format(repeatUntil, "yyyy-MM-dd") : ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const [year, month, day] = e.target.value.split("-").map(Number)
-                      setRepeatUntil(new Date(year, month - 1, day))
-                    } else {
-                      setRepeatUntil(null)
-                    }
-                  }}
-                  className="w-auto"
-                />
+              <div className="flex flex-wrap gap-4">
+                {/* Дата окончания повторения */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 h-8">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {repeatUntil
+                        ? format(repeatUntil, "d MMMM yyyy", { locale: getDateLocale() })
+                        : t("reminder.selectDate")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-4">
+                      <div className="grid gap-2">
+                        <div className="grid gap-1">
+                          <label className="text-sm font-medium">{t("reminder.date")}</label>
+                          <Input
+                            type="date"
+                            value={repeatUntil ? format(repeatUntil, "yyyy-MM-dd") : ""}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                const [year, month, day] = e.target.value.split("-").map(Number)
+                                setRepeatUntil(new Date(year, month - 1, day))
+                                setIsEdited(true)
+                              } else {
+                                setRepeatUntil(null)
+                                setIsEdited(true)
+                              }
+                            }}
+                            placeholder={getDateFormatPlaceholder()}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
                 {repeatUntil && (
-                  <Button variant="ghost" size="sm" className="h-9 px-2" onClick={() => setRepeatUntil(null)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 h-8"
+                    onClick={() => {
+                      setRepeatUntil(null)
+                      setIsEdited(true)
+                    }}
+                  >
                     {t("reminder.clear")}
                   </Button>
                 )}

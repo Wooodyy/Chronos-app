@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { useLanguage } from "@/contexts/language-context"
 
 interface ImageCropperProps {
   image: string
@@ -17,6 +18,7 @@ interface ImageCropperProps {
 }
 
 export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCropperProps) {
+  const { t } = useLanguage()
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
@@ -99,7 +101,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="sm:max-w-[500px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6">
         <DialogHeader className="mb-2">
-          <DialogTitle>Обрезать изображение</DialogTitle>
+          <DialogTitle>{t("imageCropper.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="relative w-full h-[300px] my-4">
@@ -120,7 +122,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <Label htmlFor="zoom" className="text-sm">
-                Масштаб
+                {t("imageCropper.zoom")}
               </Label>
               <span className="text-xs text-muted-foreground">{zoom.toFixed(1)}x</span>
             </div>
@@ -138,7 +140,7 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <Label htmlFor="rotation" className="text-sm">
-                Поворот
+                {t("imageCropper.rotation")}
               </Label>
               <span className="text-xs text-muted-foreground">{rotation}°</span>
             </div>
@@ -156,14 +158,13 @@ export function ImageCropper({ image, onCropComplete, onCancel, open }: ImageCro
 
         <DialogFooter className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:gap-0">
           <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
-            Отмена
+            {t("imageCropper.cancel")}
           </Button>
           <Button onClick={handleSave} className="w-full sm:w-auto">
-            Сохранить
+            {t("imageCropper.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-
