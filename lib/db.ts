@@ -785,3 +785,124 @@ export async function updateReminder(
     return false
   }
 }
+
+// Функция для получения статистики пользователя
+export async function getUserStats(login: string) {
+  try {
+    const now = new Date()
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+
+    // Статистика задач
+    const tasksStats = await pool.query(
+      `SELECT 
+        COUNT(*) as total_tasks,
+        COUNT(CASE WHEN completed = true THEN 1 END) as completed_tasks,
+        COUNT(CASE WHEN created_at >= $2 THEN 1 END) as tasks_this_month,
+        COUNT(CASE WHEN created_at >= $3 THEN 1 END) as tasks_this_year,
+        COUNT(CASE WHEN completed = true AND updated_at >= $2 THEN 1 END) as completed_this_month,
+        COUNT(CASE WHEN completed = true AND updated_at >= $3 THEN 1 END) as completed_this_year
+       FROM tasks 
+       WHERE login = $1`,
+      [login, oneMonthAgo, oneYearAgo],
+    )
+
+    // Статистика заметок
+    const notesStats = await pool.query(
+      `SELECT 
+        COUNT(*) as total_notes,
+        COUNT(CASE WHEN created_at >= $2 THEN 1 END) as notes_this_month,
+        COUNT(CASE WHEN created_at >= $3 THEN 1 END) as notes_this_year
+       FROM notes 
+       WHERE login = $1`,
+      [login, oneMonthAgo, oneYearAgo],
+    )
+
+    // Статистика напоминаний
+    const remindersStats = await pool.query(
+      `SELECT 
+        COUNT(*) as total_reminders,
+        COUNT(CASE WHEN created_at >= $2 THEN 1 END) as reminders_this_month,
+        COUNT(CASE WHEN created_at >= $3 THEN 1 END) as reminders_this_year
+       FROM reminders 
+       WHERE login = $1`,
+      [login, oneMonthAgo, oneYearAgo],
+    )
+
+    // Популярные теги из всех источников
+    const popularTags = await pool.query(
+      `SELECT tag, COUNT(*) as count
+       FROM (
+         SELECT unnest(tags) as tag FROM tasks WHERE login = $1 AND tags IS NOT NULL
+         UNION ALL
+         SELECT unnest(tags) as tag FROM notes WHERE login = $1 AND tags IS NOT NULL
+         UNION ALL
+         SELECT unnest(tags) as tag FROM reminders WHERE login = $1 AND tags IS NOT NULL
+       ) as all_tags
+       WHERE tag IS NOT NULL AND tag != ''
+       GROUP BY tag
+       ORDER BY count DESC
+       LIMIT 10`,
+      [login],
+    )
+
+    // Статистика активности по дням (для графика активности)
+    const activityData = await pool.query(
+      `SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as count
+       FROM (
+         SELECT created_at FROM tasks WHERE login = $1 AND created_at >= $2
+         UNION ALL
+         SELECT created_at FROM notes WHERE login = $1 AND created_at >= $2
+         UNION ALL
+         SELECT created_at FROM reminders WHERE login = $1 AND created_at >= $2
+       ) as all_activities
+       GROUP BY DATE(created_at)
+       ORDER BY date DESC`,
+      [login, oneYearAgo],
+    )
+
+    const tasks = tasksStats.rows[0]
+    const notes = notesStats.rows[0]
+    const reminders = remindersStats.rows[0]
+
+    return {
+      tasks: {
+        total: Number.parseInt(tasks.total_tasks) || 0,
+        completed: Number.parseInt(tasks.completed_tasks) || 0,
+        thisMonth: Number.parseInt(tasks.tasks_this_month) || 0,
+        thisYear: Number.parseInt(tasks.tasks_this_year) || 0,
+        completedThisMonth: Number.parseInt(tasks.completed_this_month) || 0,
+        completedThisYear: Number.parseInt(tasks.completed_this_year) || 0,
+      },
+      notes: {
+        total: Number.parseInt(notes.total_notes) || 0,
+        thisMonth: Number.parseInt(notes.notes_this_month) || 0,
+        thisYear: Number.parseInt(notes.notes_this_year) || 0,
+      },
+      reminders: {
+        total: Number.parseInt(reminders.total_reminders) || 0,
+        thisMonth: Number.parseInt(reminders.reminders_this_month) || 0,
+        thisYear: Number.parseInt(reminders.reminders_this_year) || 0,
+      },
+      popularTags: popularTags.rows.map((row) => ({
+        name: row.tag,
+        count: Number.parseInt(row.count),
+      })),
+      activityData: activityData.rows.map((row) => ({
+        date: row.date,
+        count: Number.parseInt(row.count),
+      })),
+    }
+  } catch (error) {
+    console.error("Ошибка получения статистики пользователя:", error)
+    return {
+      tasks: { total: 0, completed: 0, thisMonth: 0, thisYear: 0, completedThisMonth: 0, completedThisYear: 0 },
+      notes: { total: 0, thisMonth: 0, thisYear: 0 },
+      reminders: { total: 0, thisMonth: 0, thisYear: 0 },
+      popularTags: [],
+      activityData: [],
+    }
+  }
+}

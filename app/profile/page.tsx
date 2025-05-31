@@ -20,6 +20,8 @@ import {
   Activity,
   Loader2,
   AtSign,
+  Hash,
+  TrendingUp,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -29,7 +31,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
 import { ImageCropper } from "@/components/features/profile/image-cropper"
@@ -158,35 +159,338 @@ const ContributionGraph = () => {
 // Activity overview component
 const ActivityOverview = () => {
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedPeriod, setSelectedPeriod] = useState<"month" | "year">("month")
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.id) return
+
+      try {
+        const response = await fetch(`/api/users/${user.id}/stats`)
+        const data = await response.json()
+
+        if (data.success) {
+          setStats(data.stats)
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [user?.id])
+
+  if (loading) {
+    return (
+      <div className="w-full">
+        <h3 className="text-lg font-semibold mb-4">{t("profile.activityOverview")}</h3>
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-5 h-5 bg-muted rounded animate-pulse" />
+              <div className="space-y-1">
+                <div className="w-32 h-4 bg-muted rounded animate-pulse" />
+                <div className="w-20 h-3 bg-muted rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
+  const currentStats =
+    selectedPeriod === "month"
+      ? {
+          tasksCreated: stats.tasks.thisMonth,
+          tasksCompleted: stats.tasks.completedThisMonth,
+          notesCreated: stats.notes.thisMonth,
+          remindersCreated: stats.reminders.thisMonth,
+        }
+      : {
+          tasksCreated: stats.tasks.thisYear,
+          tasksCompleted: stats.tasks.completedThisYear,
+          notesCreated: stats.notes.thisYear,
+          remindersCreated: stats.reminders.thisYear,
+        }
+
+  const completionRate = stats.tasks.total > 0 ? Math.round((stats.tasks.completed / stats.tasks.total) * 100) : 0
 
   return (
     <div className="w-full">
-      <h3 className="text-lg font-semibold mb-4">{t("profile.activityOverview")}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">{t("profile.activityOverview")}</h3>
+        <div className="flex border rounded-md overflow-hidden">
+          <button
+            onClick={() => setSelectedPeriod("month")}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium transition-colors",
+              selectedPeriod === "month" ? "bg-[#8b5cf6] text-white" : "hover:bg-[#8b5cf6]/10 hover:text-[#8b5cf6]",
+            )}
+          >
+            {t("stats.month")}
+          </button>
+          <button
+            onClick={() => setSelectedPeriod("year")}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium transition-colors",
+              selectedPeriod === "year" ? "bg-[#8b5cf6] text-white" : "hover:bg-[#8b5cf6]/10 hover:text-[#8b5cf6]",
+            )}
+          >
+            {t("stats.year")}
+          </button>
+        </div>
+      </div>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Activity className="h-5 w-5 text-primary" />
-          <div>
-            <div className="text-sm font-medium">{t("profile.tasksCreated", { count: 12 })}</div>
-            <div className="text-xs text-muted-foreground">{t("profile.lastMonth")}</div>
+        {/* Задачи созданы */}
+        <motion.div
+          className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+            <Activity className="h-5 w-5 text-blue-600" />
           </div>
-        </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium">{t("stats.tasksCreated")}</div>
+            <div className="text-xs text-muted-foreground">
+              {selectedPeriod === "month" ? t("stats.thisMonth") : t("stats.thisYear")}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-bold text-blue-600">{currentStats.tasksCreated}</div>
+            <div className="text-xs text-muted-foreground">
+              {t("stats.total")}: {stats.tasks.total}
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="flex items-center gap-3">
-          <Activity className="h-5 w-5 text-emerald-500" />
-          <div>
-            <div className="text-sm font-medium">{t("profile.tasksCompleted", { count: 8 })}</div>
-            <div className="text-xs text-muted-foreground">{t("profile.lastMonth")}</div>
+        {/* Задачи выполнены */}
+        <motion.div
+          className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <Activity className="h-5 w-5 text-emerald-600" />
           </div>
-        </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium">{t("stats.tasksCompleted")}</div>
+            <div className="text-xs text-muted-foreground">
+              {selectedPeriod === "month" ? t("stats.thisMonth") : t("stats.thisYear")}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-bold text-emerald-600">{currentStats.tasksCompleted}</div>
+            <div className="text-xs text-muted-foreground">
+              {completionRate}% {t("stats.completed")}
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="flex items-center gap-3">
-          <Activity className="h-5 w-5 text-amber-500" />
-          <div>
-            <div className="text-sm font-medium">{t("profile.remindersCreated", { count: 5 })}</div>
-            <div className="text-xs text-muted-foreground">{t("profile.lastMonth")}</div>
+        {/* Заметки созданы */}
+        <motion.div
+          className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+            <Activity className="h-5 w-5 text-amber-600" />
           </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium">{t("stats.notesCreated")}</div>
+            <div className="text-xs text-muted-foreground">
+              {selectedPeriod === "month" ? t("stats.thisMonth") : t("stats.thisYear")}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-bold text-amber-600">{currentStats.notesCreated}</div>
+            <div className="text-xs text-muted-foreground">
+              {t("stats.total")}: {stats.notes.total}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Напоминания созданы */}
+        <motion.div
+          className="flex items-center gap-3 p-3 rounded-lg bg-purple-500/5 border border-purple-500/10"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+            <Activity className="h-5 w-5 text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium">{t("stats.remindersCreated")}</div>
+            <div className="text-xs text-muted-foreground">
+              {selectedPeriod === "month" ? t("stats.thisMonth") : t("stats.thisYear")}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-bold text-purple-600">{currentStats.remindersCreated}</div>
+            <div className="text-xs text-muted-foreground">
+              {t("stats.total")}: {stats.reminders.total}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+// Popular Tags component with real data
+const PopularTags = () => {
+  const { t } = useLanguage()
+  const { user } = useAuth()
+  const [tags, setTags] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.id) return
+
+      try {
+        const response = await fetch(`/api/users/${user.id}/stats`)
+        const data = await response.json()
+
+        if (data.success && data.stats.popularTags) {
+          setTags(data.stats.popularTags)
+        }
+      } catch (error) {
+        console.error("Error fetching tags:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [user?.id])
+
+  if (loading) {
+    return (
+      <div className="w-full">
+        <h3 className="text-lg font-semibold mb-4">{t("profile.popularTags")}</h3>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
+              <div className="flex-1 space-y-1">
+                <div className="w-20 h-4 bg-muted rounded animate-pulse" />
+                <div className="w-full h-2 bg-muted rounded animate-pulse" />
+              </div>
+              <div className="w-8 h-4 bg-muted rounded animate-pulse" />
+            </div>
+          ))}
         </div>
+      </div>
+    )
+  }
+
+  if (!tags || tags.length === 0) {
+    return (
+      <div className="w-full">
+        <div className="flex items-center gap-2 mb-4">
+          <Hash className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">{t("profile.popularTags")}</h3>
+        </div>
+        <div className="text-center py-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+            <Hash className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground mb-2">{t("stats.noTagsYet")}</p>
+          <p className="text-xs text-muted-foreground">{t("stats.startCreatingContent")}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const totalCount = tags.reduce((sum, tag) => sum + tag.count, 0)
+  const colors = [
+    { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-500/20", progress: "bg-blue-500" },
+    { bg: "bg-emerald-500/10", text: "text-emerald-600", border: "border-emerald-500/20", progress: "bg-emerald-500" },
+    { bg: "bg-amber-500/10", text: "text-amber-600", border: "border-amber-500/20", progress: "bg-amber-500" },
+    { bg: "bg-rose-500/10", text: "text-rose-600", border: "border-rose-500/20", progress: "bg-rose-500" },
+    { bg: "bg-purple-500/10", text: "text-purple-600", border: "border-purple-500/20", progress: "bg-purple-500" },
+    { bg: "bg-indigo-500/10", text: "text-indigo-600", border: "border-indigo-500/20", progress: "bg-indigo-500" },
+    { bg: "bg-cyan-500/10", text: "text-cyan-600", border: "border-cyan-500/20", progress: "bg-cyan-500" },
+    { bg: "bg-orange-500/10", text: "text-orange-600", border: "border-orange-500/20", progress: "bg-orange-500" },
+  ]
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">{t("profile.popularTags")}</h3>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {tags.slice(0, 5).map((tag, index) => {
+          const color = colors[index % colors.length]
+          const percentage = Math.round((tag.count / totalCount) * 100)
+
+          return (
+            <motion.div
+              key={tag.name}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-md",
+                color.bg,
+                color.border,
+              )}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              {/* Rank */}
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+                  color.bg,
+                  color.text,
+                )}
+              >
+                {index + 1}
+              </div>
+
+              {/* Tag info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className={cn("font-medium text-sm truncate", color.text)}>#{tag.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {tag.count} {t("stats.uses")}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-muted/30 rounded-full h-1.5 overflow-hidden">
+                  <motion.div
+                    className={cn("h-full rounded-full", color.progress)}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(percentage * 2, 100)}%` }}
+                    transition={{ delay: index * 0.1 + 0.2, duration: 0.8, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+
+              {/* Percentage */}
+              <div className={cn("text-xs font-medium", color.text)}>{percentage}%</div>
+            </motion.div>
+          )
+        })}
       </div>
     </div>
   )
@@ -216,6 +520,8 @@ export default function ProfilePage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
 
+  const [stats, setStats] = useState<any>(null)
+
   // Предотвращаем гидрацию
   useEffect(() => {
     setMounted(true)
@@ -242,6 +548,26 @@ export default function ProfilePage() {
       return () => clearTimeout(timer)
     }
   }, [user, updateUserData])
+
+  // Загружаем статистику пользователя
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.id) return
+
+      try {
+        const response = await fetch(`/api/users/${user.id}/stats`)
+        const data = await response.json()
+
+        if (data.success) {
+          setStats(data.stats)
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error)
+      }
+    }
+
+    fetchStats()
+  }, [user?.id])
 
   const handleSave = async () => {
     if (!user) return
@@ -727,27 +1053,7 @@ export default function ProfilePage() {
 
                     <Card className="border-none shadow-lg overflow-hidden bg-white/80 dark:bg-zinc-900/80">
                       <CardContent className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">{t("profile.popularTags")}</h3>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20">
-                            {t("profile.tag.work")}
-                          </Badge>
-                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20">
-                            {t("profile.tag.important")}
-                          </Badge>
-                          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20">
-                            {t("profile.tag.urgent")}
-                          </Badge>
-                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20">
-                            {t("profile.tag.meeting")}
-                          </Badge>
-                          <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20">
-                            {t("profile.tag.personal")}
-                          </Badge>
-                          <Badge className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20">
-                            {t("profile.tag.project")}
-                          </Badge>
-                        </div>
+                        <PopularTags />
                       </CardContent>
                     </Card>
                   </div>

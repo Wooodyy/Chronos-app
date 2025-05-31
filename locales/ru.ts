@@ -6,6 +6,24 @@ export const ru = {
   "menu.profile": "Профиль",
   "menu.voice": "Голосовой ввод",
 
+  // Stats
+  "stats.loading": "Загрузка статистики...",
+  "stats.error": "Ошибка загрузки статистики",
+  "stats.month": "Месяц",
+  "stats.year": "Год",
+  "stats.thisMonth": "в этом месяце",
+  "stats.thisYear": "в этом году",
+  "stats.total": "всего",
+  "stats.completed": "выполнено",
+  "stats.tasksCreated": "Задач создано",
+  "stats.tasksCompleted": "Задач выполнено",
+  "stats.notesCreated": "Заметок создано",
+  "stats.remindersCreated": "Напоминаний создано",
+  "stats.completionRate": "Процент выполнения",
+  "stats.noTagsYet": "Тегов пока нет",
+  "stats.startCreatingContent": "Начните создавать контент, чтобы увидеть популярные теги",
+  "stats.uses": "использований",
+  
   // Mobile FAB items
   "fab.note": "Заметка",
   "fab.task": "Задача",

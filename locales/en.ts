@@ -17,6 +17,24 @@ export const en = {
   "calendar.month": "Month",
   "calendar.swipeToNavigate": "Swipe to navigate",
 
+   // Stats
+  "stats.loading": "Loading statistics...",
+  "stats.error": "Error loading statistics",
+  "stats.month": "Month",
+  "stats.year": "Year",
+  "stats.thisMonth": "this month",
+  "stats.thisYear": "this year",
+  "stats.total": "total",
+  "stats.completed": "completed",
+  "stats.tasksCreated": "Tasks created",
+  "stats.tasksCompleted": "Tasks completed",
+  "stats.notesCreated": "Notes created",
+  "stats.remindersCreated": "Reminders created",
+  "stats.completionRate": "Completion rate",
+  "stats.noTagsYet": "No tags yet",
+  "stats.startCreatingContent": "Start creating content to see popular tags",
+  "stats.uses": "uses",
+
   // Dashboard page
   "dashboard.title": "Calendar",
   "dashboard.welcome": "Welcome",

@@ -17,6 +17,24 @@ export const kz = {
   "calendar.month": "Ай",
   "calendar.swipeToNavigate": "Навигация үшін сырғытыңыз",
 
+  // Stats
+  "stats.loading": "Статистика жүктелуде...",
+  "stats.error": "Статистиканы жүктеу қатесі",
+  "stats.month": "Ай",
+  "stats.year": "Жыл",
+  "stats.thisMonth": "осы айда",
+  "stats.thisYear": "осы жылы",
+  "stats.total": "барлығы",
+  "stats.completed": "орындалды",
+  "stats.tasksCreated": "Тапсырмалар жасалды",
+  "stats.tasksCompleted": "Тапсырмалар орындалды",
+  "stats.notesCreated": "Жазбалар жасалды",
+  "stats.remindersCreated": "Еске салғыштар жасалды",
+  "stats.completionRate": "Орындау пайызы",
+  "stats.noTagsYet": "Тегтер әлі жоқ",
+  "stats.startCreatingContent": "Танымал тегтерді көру үшін мазмұн жасай бастаңыз",
+  "stats.uses": "пайдалану",
+
   // Dashboard page
   "dashboard.title": "Күнтізбе",
   "dashboard.welcome": "Қош келдіңіз",

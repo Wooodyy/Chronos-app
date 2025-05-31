@@ -151,12 +151,12 @@ export default function LoginPage() {
             <div className="flex justify-center">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full blur opacity-75 animate-pulse"></div>
-                <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-xl">
+                <div className="relative w-20 h-20 sm:w-22 sm:h-22 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-xl">
                   <Image
-                    src="/logo.png"
+                    src="/logo.svg"
                     alt="Chronos Logo"
-                    width={64}
-                    height={64}
+                    width={60}
+                    height={60}
                     className="drop-shadow-lg rounded-full"
                   />
                 </div>
