@@ -99,11 +99,11 @@ export function Sidebar() {
           <div className="flex items-center gap-3 transition-opacity duration-300">
             <div className="relative">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Chronos Logo"
                 width={40}
                 height={40}
-                className="relative z-10 drop-shadow-[0_0_10px_rgba(139,92,246,0.7)]"
+                className="relative z-10 drop-shadow-[0_0_10px_rgba(139,92,246,0.7)] rounded-full"
               />
             </div>
             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
@@ -255,11 +255,11 @@ export function Sidebar() {
         <div className="flex items-center gap-3">
           <div className="relative">
             <Image
-              src="/logo.png"
+              src="/logo.svg"
               alt="Chronos Logo"
               width={32}
               height={32}
-              className="relative z-10 drop-shadow-[0_0_10px_rgba(139,92,246,0.7)]"
+              className="relative z-10 drop-shadow-[0_0_10px_rgba(139,92,246,0.7)] rounded-full"
             />
           </div>
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">

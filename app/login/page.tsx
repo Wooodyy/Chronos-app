@@ -38,26 +38,14 @@ export default function LoginPage() {
   ]
 
   useEffect(() => {
-    if (user && !isLogout) {
+    // Проверяем, есть ли пользователь в контексте
+    if (user) {
       router.push("/dashboard")
     }
 
-    if (isLogout && !logoutToastShown.current) {
-      logoutToastShown.current = true
-      try {
-        setTimeout(() => {
-          toast({
-            title: t("auth.login.success.logout"),
-            description: t("auth.login.success.logoutDesc"),
-            type: "success",
-            duration: 3000,
-          })
-        }, 100)
-      } catch (error) {
-        console.error("Toast error:", error)
-      }
-    }
-  }, [user, router, isLogout, t, toast])
+    // Удаляем проверку на isLogout и связанный с ней тост
+    // Это предотвратит показ тоста при каждом входе на страницу логина
+  }, [user, router, t, toast])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -164,7 +152,13 @@ export default function LoginPage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full blur opacity-75 animate-pulse"></div>
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-xl">
-                  <Image src="/logo.png" alt="Chronos Logo" width={64} height={64} className="drop-shadow-lg" />
+                  <Image
+                    src="/logo.png"
+                    alt="Chronos Logo"
+                    width={64}
+                    height={64}
+                    className="drop-shadow-lg rounded-full"
+                  />
                 </div>
               </div>
             </div>

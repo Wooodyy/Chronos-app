@@ -46,24 +46,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Очищаем localStorage
     localStorage.removeItem("chronos_user")
 
+    // Очищаем все ключи, связанные с приложением
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (
+        key &&
+        (key.startsWith("chronos_") || key.includes("user") || key.includes("token") || key.includes("auth"))
+      ) {
+        localStorage.removeItem(key)
+      }
+    }
+
     // Очищаем sessionStorage
     sessionStorage.removeItem("user_data_refreshed")
     sessionStorage.removeItem("sidebar_refreshed")
     sessionStorage.removeItem("reminders_loaded")
     sessionStorage.removeItem("page_reloaded")
     sessionStorage.removeItem("user_data_loaded")
+    sessionStorage.removeItem("force_logout")
 
-    // Очищаем все другие ключи, связанные с приложением
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith("chronos_")) {
-        localStorage.removeItem(key)
-      }
-    }
-
+    // Очищаем все ключи, связанные с приложением
     for (let i = 0; i < sessionStorage.length; i++) {
       const key = sessionStorage.key(i)
-      if (key && (key.includes("refreshed") || key.includes("loaded") || key.includes("chronos"))) {
+      if (
+        key &&
+        (key.includes("refreshed") ||
+          key.includes("loaded") ||
+          key.includes("chronos") ||
+          key.includes("user") ||
+          key.includes("token") ||
+          key.includes("auth"))
+      ) {
         sessionStorage.removeItem(key)
       }
     }
@@ -298,9 +311,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    // Устанавливаем флаг принудительного выхода
-    sessionStorage.setItem("force_logout", "true")
-
     // Полностью очищаем все данные из хранилищ
     clearAllStorageData()
 
@@ -318,8 +328,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Добавляем небольшую задержку перед перенаправлением, чтобы убедиться, что все данные очищены
     setTimeout(() => {
-      // Перенаправляем на страницу входа с параметром, предотвращающим автоматический вход
-      router.push("/login?logout=true")
+      // Перенаправляем на страницу входа без параметров
+      router.push("/login")
     }, 100)
   }
 

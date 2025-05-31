@@ -32,8 +32,8 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="icon" href="/public/favicon.ico" />
+        <link rel="apple-touch-icon" href="/public/logo.png" />
       </head>
       <body className={cn(montserrat.variable, "font-sans antialiased")}>
         <ThemeProvider

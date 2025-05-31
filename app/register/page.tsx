@@ -143,7 +143,13 @@ export default function RegisterPage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full blur opacity-75 animate-pulse"></div>
                 <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center shadow-xl">
-                  <Image src="/logo.png" alt="Chronos Logo" width={48} height={48} className="drop-shadow-lg" />
+                  <Image
+                    src="/logo.png"
+                    alt="Chronos Logo"
+                    width={48}
+                    height={48}
+                    className="drop-shadow-lg rounded-full"
+                  />
                 </div>
               </div>
             </div>
