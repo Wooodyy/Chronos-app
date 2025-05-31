@@ -310,27 +310,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    // Устанавливаем флаг принудительного выхода
+    sessionStorage.setItem("force_logout", "true")
+
     // Полностью очищаем все данные из хранилищ
     clearAllStorageData()
 
-    // Очищаем все куки, связанные с аутентификацией
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-    })
+    // Очищаем все куки
+    const cookies = document.cookie.split(";")
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i]
+      const eqPos = cookie.indexOf("=")
+      const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim()
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`
+    }
 
-    // Сбрасываем флаги
+    // Очищаем кэш через Service Worker если он доступен
+    if ('caches' in window) {
+      try {
+        const cacheKeys = await caches.keys()
+        await Promise.all(cacheKeys.map(key => caches.delete(key)))
+      } catch (e) {
+        console.error('Error clearing cache:', e)
+      }
+    }
+
+    // Сбрасываем флаги и состояние
     dataLoadedInSessionRef.current = false
     initialLoadDoneRef.current = false
-
-    // Сбрасываем состояние пользователя
     setUser(null)
 
-    // Добавляем небольшую задержку перед перенаправлением, чтобы убедиться, что все данные очищены
-    setTimeout(() => {
-      // Перенаправляем на страницу входа без параметров
-      router.push("/login")
-    }, 100)
+    // Принудительно очищаем sessionStorage и localStorage
+    sessionStorage.clear()
+    localStorage.clear()
+
+    // Перенаправляем на страницу входа
+    window.location.href = '/login'
   }
 
   return (

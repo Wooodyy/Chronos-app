@@ -182,7 +182,7 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   onFocus={() => setFocusedField("username")}
                   onBlur={() => setFocusedField(null)}
-                  className="h-12 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-purple-400 transition-all duration-200 text-base pt-2"
+                  className="h-12 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-purple-400 focus:bg-white/20 focus:border-purple-400 transition-all duration-200 text-base pt-2"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -190,7 +190,7 @@ export default function LoginPage() {
                   htmlFor="username"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isUsernameLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 px-2 py-1 rounded-md shadow-lg border border-purple-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 px-2 py-1 rounded-md shadow-lg border-purple-400/30"
                       : "top-3 text-sm text-white/70"
                   }`}
                 >
@@ -207,7 +207,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocusedField("password")}
                   onBlur={() => setFocusedField(null)}
-                  className="h-12 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-purple-400 transition-all duration-200 text-base pt-2 pr-10"
+                  className="h-12 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-purple-400 focus:bg-white/20 focus:border-purple-400 transition-all duration-200 text-base pt-2 pr-10"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -215,7 +215,7 @@ export default function LoginPage() {
                   htmlFor="password"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isPasswordLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 px-2 py-1 rounded-md shadow-lg border border-purple-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 px-2 py-1 rounded-md shadow-lg border-purple-400/30"
                       : "top-3 text-sm text-white/70"
                   }`}
                 >

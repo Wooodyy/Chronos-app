@@ -176,7 +176,7 @@ export default function RegisterPage() {
                   onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-emerald-400 focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -184,7 +184,7 @@ export default function RegisterPage() {
                   htmlFor="login"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isLoginLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border-none border-emerald-400/30"
                       : "top-2 text-sm text-white/70"
                   }`}
                 >
@@ -202,7 +202,7 @@ export default function RegisterPage() {
                   onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-emerald-400 focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -210,7 +210,7 @@ export default function RegisterPage() {
                   htmlFor="firstName"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isFirstNameLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border-none border-emerald-400/30"
                       : "top-2 text-sm text-white/70"
                   }`}
                 >
@@ -227,7 +227,7 @@ export default function RegisterPage() {
                   onFocus={() => setFocusedField("lastName")}
                   onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
-                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-emerald-400 focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                   htmlFor="lastName"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isLastNameLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border-none border-emerald-400/30"
                       : "top-2 text-sm text-white/70"
                   }`}
                 >
@@ -254,7 +254,7 @@ export default function RegisterPage() {
                   onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-emerald-400 focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -262,7 +262,7 @@ export default function RegisterPage() {
                   htmlFor="email"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isEmailLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border-none border-emerald-400/30"
                       : "top-2 text-sm text-white/70"
                   }`}
                 >
@@ -281,7 +281,7 @@ export default function RegisterPage() {
                   onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2 pr-10"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-emerald-400 focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2 pr-10"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -289,7 +289,7 @@ export default function RegisterPage() {
                   htmlFor="password"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isPasswordLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border-none border-emerald-400/30"
                       : "top-2 text-sm text-white/70"
                   }`}
                 >
@@ -315,7 +315,7 @@ export default function RegisterPage() {
                   onBlur={() => setFocusedField(null)}
                   disabled={isLoading}
                   required
-                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2 pr-10"
+                  className="h-10 bg-white/10 border-white/20 text-white backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-emerald-400 focus:bg-white/20 focus:border-emerald-400 transition-all duration-200 text-sm pt-2 pr-10"
                   placeholder=""
                   autoComplete="off"
                 />
@@ -323,7 +323,7 @@ export default function RegisterPage() {
                   htmlFor="confirmPassword"
                   className={`absolute left-3 transition-all duration-200 pointer-events-none ${
                     isConfirmPasswordLabelFloating
-                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border border-emerald-400/30"
+                      ? "-top-3 text-xs font-semibold text-white bg-gradient-to-r from-emerald-900 via-teal-800 to-cyan-900 px-2 py-1 rounded-md shadow-lg border-none border-emerald-400/30"
                       : "top-2 text-sm text-white/70"
                   }`}
                 >
