@@ -38,123 +38,7 @@ import { useNotification } from "@/components/ui/notification"
 import { cn } from "@/lib/utils"
 import { PasswordForm } from "@/components/features/profile/password-form"
 import { useLanguage } from "@/contexts/language-context"
-
-// Contribution graph component
-const ContributionGraph = () => {
-  const { t, language } = useLanguage()
-  const currentYear = new Date().getFullYear()
-
-  // Получаем названия месяцев в зависимости от языка
-  const months = Array.from({ length: 12 }).map((_, i) =>
-    t(
-      `month.${["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"][i]}`,
-    ),
-  )
-
-  // Получаем названия дней недели в зависимости от языка
-  const days = ["monday", "wednesday", "friday"].map((day) => t(`day.${day}`))
-
-  // Generate contribution data - a fixed pattern that matches the screenshot
-  const generateContributions = () => {
-    // Create a 7x52 grid (7 days per week, 52 weeks per year)
-    const contributions = []
-
-    // For each week (column)
-    for (let week = 0; week < 52; week++) {
-      const weekData = []
-
-      // For each day (row)
-      for (let day = 0; day < 7; day++) {
-        // Generate a random level (0-4) with higher probability for lower values
-        const rand = Math.random()
-        let level
-        if (rand < 0.6)
-          level = 0 // 60% chance of level 0
-        else if (rand < 0.75)
-          level = 1 // 15% chance of level 1
-        else if (rand < 0.85)
-          level = 2 // 10% chance of level 2
-        else if (rand < 0.95)
-          level = 3 // 10% chance of level 3
-        else level = 4 // 5% chance of level 4
-
-        weekData.push(level)
-      }
-      contributions.push(weekData)
-    }
-
-    return contributions
-  }
-
-  const contributions = generateContributions()
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
-
-  return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">{t("profile.activity")}</h3>
-        <div className="text-sm text-muted-foreground">{currentYear}</div>
-      </div>
-
-      <div className="relative overflow-x-auto pb-10">
-        {/* Days of week labels - positioned to align with rows */}
-        <div className="absolute left-0 top-0 flex flex-col justify-between h-[140px] py-[6px]">
-          <span className="text-xs text-muted-foreground pr-2">{days[0]}</span>
-          <span className="text-xs text-muted-foreground pr-2">{days[1]}</span>
-          <span className="text-xs text-muted-foreground pr-2">{days[2]}</span>
-        </div>
-
-        <div className="ml-8 min-w-[700px]">
-          {/* Month labels */}
-          <div className="grid grid-cols-12 mb-2">
-            {months.map((month, i) => (
-              <span key={i} className="text-xs text-muted-foreground text-center">
-                {month}
-              </span>
-            ))}
-          </div>
-
-          {/* Contribution grid */}
-          <div className="grid grid-rows-7 grid-flow-col gap-1">
-            {Array.from({ length: 7 }).map((_, rowIndex) => (
-              <div key={rowIndex} className="flex gap-1">
-                {contributions.map((week, weekIndex) => (
-                  <div
-                    key={weekIndex}
-                    className={cn(
-                      "w-3 h-3 rounded-full",
-                      isDark
-                        ? ["bg-zinc-800", "bg-purple-900/40", "bg-purple-700/60", "bg-purple-600/80", "bg-purple-500"][
-                            week[rowIndex]
-                          ]
-                        : ["bg-zinc-800", "bg-purple-900/40", "bg-purple-700/60", "bg-purple-600/80", "bg-purple-500"][
-                            week[rowIndex]
-                          ],
-                    )}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-
-          {/* Legend - positioned at the bottom right */}
-          <div className="absolute bottom-0 right-0 flex items-center text-xs text-muted-foreground mt-4">
-            <span>{t("profile.less")}</span>
-            <div className="flex gap-1 mx-2">
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-zinc-800" : "bg-zinc-800")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-900/40" : "bg-purple-900/40")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-700/60" : "bg-purple-700/60")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-600/80" : "bg-purple-600/80")} />
-              <div className={cn("w-3 h-3 rounded-full", isDark ? "bg-purple-500" : "bg-purple-500")} />
-            </div>
-            <span>{t("profile.more")}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import UserActivityGraph from "@/components/features/profile/user-activity-graph" // Added import
 
 // Activity overview component
 const ActivityOverview = () => {
@@ -440,7 +324,7 @@ const PopularTags = () => {
       <div className="space-y-3">
         {tags.slice(0, 5).map((tag, index) => {
           const color = colors[index % colors.length]
-          const percentage = Math.round((tag.count / totalCount) * 100)
+          const percentage = totalCount > 0 ? Math.round((tag.count / totalCount) * 100) : 0
 
           return (
             <motion.div
@@ -480,7 +364,7 @@ const PopularTags = () => {
                   <motion.div
                     className={cn("h-full rounded-full", color.progress)}
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(percentage * 2, 100)}%` }}
+                    animate={{ width: `${Math.min(percentage * 2, 100)}%` }} // Capped at 100%
                     transition={{ delay: index * 0.1 + 0.2, duration: 0.8, ease: "easeOut" }}
                   />
                 </div>
@@ -521,6 +405,7 @@ export default function ProfilePage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
 
   const [stats, setStats] = useState<any>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
 
   // Предотвращаем гидрацию
   useEffect(() => {
@@ -552,8 +437,11 @@ export default function ProfilePage() {
   // Загружаем статистику пользователя
   useEffect(() => {
     const fetchStats = async () => {
-      if (!user?.id) return
-
+      if (!user?.id) {
+        setStatsLoading(false)
+        return
+      }
+      setStatsLoading(true)
       try {
         const response = await fetch(`/api/users/${user.id}/stats`)
         const data = await response.json()
@@ -563,6 +451,8 @@ export default function ProfilePage() {
         }
       } catch (error) {
         console.error("Error fetching stats:", error)
+      } finally {
+        setStatsLoading(false)
       }
     }
 
@@ -575,7 +465,8 @@ export default function ProfilePage() {
     setIsSaving(true)
 
     try {
-      const response = await fetch(`/api/users/${user.id}`, {
+      const response = await fetch(`/api/users/${user.id}/update`, {
+        // Corrected API endpoint
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1040,7 +931,18 @@ export default function ProfilePage() {
                 <div className="space-y-8">
                   <Card className="border-none shadow-lg overflow-hidden bg-white/80 dark:bg-zinc-900/80">
                     <CardContent className="p-6">
-                      <ContributionGraph />
+                      {statsLoading ? (
+                        <div className="h-48 flex items-center justify-center text-muted-foreground">
+                          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                          {t("profile.loadingActivity")}
+                        </div>
+                      ) : stats && stats.activityData ? (
+                        <UserActivityGraph activityData={stats.activityData} year={new Date().getFullYear()} />
+                      ) : (
+                        <div className="h-48 flex items-center justify-center text-muted-foreground">
+                          {t("profile.noActivityData")}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 

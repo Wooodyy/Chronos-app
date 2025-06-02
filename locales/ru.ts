@@ -6,6 +6,22 @@ export const ru = {
   "menu.profile": "Профиль",
   "menu.voice": "Голосовой ввод",
 
+  // Short days
+  "day.short.sun": "Вс",
+  "day.short.mon": "Пн",
+  "day.short.tue": "Вт",
+  "day.short.wed": "Ср",
+  "day.short.thu": "Чт",
+  "day.short.fri": "Пт",
+  "day.short.sat": "Сб",
+  // User Activity Graph
+  "profile.contributionsInYear": "{total} изменений за {year} год",
+  "profile.contribution": "изменения",
+  "profile.contributions": "изменений",
+  "profile.onDate": "за",
+  "profile.noActivityData": "Нет данных об активности за этот период.",
+  "profile.loadingActivity": "Загрузка данных об активности...",
+
   // Voice Input
   "voiceInput.title.permissionError": "Требуется разрешение",
   "voiceInput.title.result": "Результат",

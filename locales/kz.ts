@@ -9,6 +9,23 @@ export const kz = {
   "fab.task": "Тапсырма",
   "fab.reminder": "Еске салғыш",
 
+  // Short days
+  "day.short.sun": "Жс",
+  "day.short.mon": "Дс",
+  "day.short.tue": "Сс",
+  "day.short.wed": "Ср",
+  "day.short.thu": "Бс",
+  "day.short.fri": "Жм",
+  "day.short.sat": "Сб",
+
+  // User Activity Graph
+  "profile.contributionsInYear": "{year} жылғы {total} өзгерістер",
+  "profile.contribution": "өзгеріс",
+  "profile.contributions": "өзгерістер",
+  "profile.onDate": "", // Kazakh might not need a preposition here, or it could be "күні" depending on context. Leaving empty for now.
+  "profile.noActivityData": "Бұл кезеңге белсенділік деректері жоқ.",
+  "profile.loadingActivity": "Белсенділік деректері жүктелуде...",
+
   // Calendar
   "calendar.weekView": "Апталық көрініс",
   "calendar.monthView": "Айлық көрініс",

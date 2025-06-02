@@ -9,6 +9,23 @@ export const en = {
   "fab.task": "Task",
   "fab.reminder": "Reminder",
 
+  // Short days
+  "day.short.sun": "Sun",
+  "day.short.mon": "Mon",
+  "day.short.tue": "Tue",
+  "day.short.wed": "Wed",
+  "day.short.thu": "Thu",
+  "day.short.fri": "Fri",
+  "day.short.sat": "Sat",
+
+  // User Activity Graph
+  "profile.contributionsInYear": "{total} changes in {year}",
+  "profile.contribution": "change",
+  "profile.contributions": "changes",
+  "profile.onDate": "on",
+  "profile.noActivityData": "No activity data for this period.",
+  "profile.loadingActivity": "Loading activity data...",
+
   // Calendar
   "calendar.weekView": "Week View",
   "calendar.monthView": "Month View",
