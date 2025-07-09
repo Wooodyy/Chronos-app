@@ -1,7 +1,7 @@
 // lib/gemini-service.ts
 
-const GEMINI_API_KEY = "AIzaSyBejQEkKk8AHwBSry15M7CVP4j0vkSvUpI" // ЗАМЕНИТЕ ЭТО!
-const GEMINI_MODEL_NAME = "gemini-1.5-flash-latest"
+const GEMINI_API_KEY = "AIzaSyBszu-2IUknOTq0HmdKnw-pQCK7veJKoek" // ЗАМЕНИТЕ ЭТО!
+const GEMINI_MODEL_NAME = "gemini-2.5-flash"
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 function getCurrentDateFormatted(): string {
