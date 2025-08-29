@@ -77,10 +77,3 @@ Chronos-app/
 ## 📄 License
 
 This project is licensed under the MIT License.
-
-```
-
----
-
-Want me to also make it **GitHub-profile-ready** with badges (tech stack, license, status) so it looks more pro?
-```
